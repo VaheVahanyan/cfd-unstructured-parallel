@@ -1,0 +1,12 @@
+.direnv/
+.cache/
+.idea/
+cmake-build-release/
+cmake-build-debug/
+cmake-build-default/
+build/
+/data/
+.envrc
+result/
+results/
+.clangd

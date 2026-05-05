@@ -1,0 +1,746 @@
+run:
+    cases: [woodward_colella]
+
+defaults:
+    mesh:
+        type: structured
+        dim: 2
+        cells:
+            x: 100
+            y: 3
+            z: 1
+        domain:
+            x: 1.0
+            y: 1.0
+            z: 1.0
+
+    physics:
+        eos: ideal_gas
+        parameters:
+            gamma: 1.4
+#            reactant_mass_fraction: 1.0
+
+    numerics:
+        method: godunov
+        parameters:
+            time_integrator: euler
+            reconstruction: p0
+            riemann_solver: hllc
+            cfl: 0.2
+            global_limiter: false
+            viscosity: false
+            diffusion: false
+
+    boundary_conditions:
+        x_min: reflective
+        x_max: reflective
+        y_min: outlet
+        y_max: outlet
+
+        states:
+            x_min:
+                rho: 5.0
+                u: 10.0
+                v: 0.0
+                w: 0.0
+                p: 1.0
+            y_min:
+                rho: 1.0
+                u: 0.0
+                v: 0.5
+                w: 0.0
+                p: 1.0
+            y_max:
+                rho: 1.0
+                u: 0.0
+                v: -0.5
+                w: 0.0
+                p: 1.0
+
+    immersed_boundaries:
+        enabled: false
+        objects: []
+
+    parallel:
+        mpi: false
+
+    stopping:
+        t_end: 0.25
+        max_steps: 0
+
+    logging:
+        every_steps: 10
+        every_time: 0.0
+
+    output:
+        format: vtk
+        directory: ../result
+        every_steps: 100
+        every_time: 0.0
+
+cases:
+    woodward_colella:
+        mesh:
+            type: gmsh_geo
+            dim: 2
+            source:
+                file: ../data/Woodward_Colella.geo
+
+        physics:
+            eos: ideal_gas
+            parameters:
+                gamma: 1.4
+
+        numerics:
+            parameters:
+                cfl: 0.4
+
+        boundary_conditions:
+            tags:
+                1:
+                    type: inlet
+                    state:
+                        rho: 1.4
+                        u: 3.0
+                        v: 0.0
+                        w: 0.0
+                        p: 1.0
+                2:
+                    type: outlet
+                3:
+                    type: wall
+
+        initial_condition:
+            type: constant
+            rho: 1.4
+            u: 3.0
+            v: 0.0
+            w: 0.0
+            p: 1.0
+
+        stopping:
+            t_end: 4.0
+
+        output:
+            every_steps: 100
+
+        parallel:
+            mpi: true
+
+    naca:
+        boundary_conditions:
+            tags:
+                1:
+                    type: inlet
+                    state:
+                        rho: 1.0
+                        u: 0.2
+                        v: 0.0
+                        w: 0.0
+                        p: 1.0
+                2:
+                    type: outlet
+                3:
+                    type: outlet
+                4:
+                    type: wall
+
+
+        initial_condition:
+            type: constant
+            rho: 1.0
+            u: 0.2
+            v: 0.0
+            w: 0.0
+            p: 1.0
+
+        mesh:
+            type: gmsh_geo
+            dim: 2
+            source:
+                file: ../data/NACA_0012.geo
+
+        stopping:
+            t_end: 0.12
+
+        parallel:
+            mpi: true
+
+    test_gmsh_rect_2d:
+        initial_condition:
+            type: constant
+            rho: 1.0
+            u: 0.0
+            v: 0.0
+            w: 0.0
+            p: 1.0
+
+        mesh:
+            type: gmsh_file
+            dim: 2
+            source:
+                file: ../data/test_rect_2d.msh
+
+        boundary_conditions:
+            tags:
+                0:
+                    type: reflective
+                1:
+                    type: reflective
+                2:
+                    type: reflective
+                3:
+                    type: reflective
+
+    cylinder:
+        boundary_conditions:
+            tags:
+                1:
+                    type: inlet
+                    state:
+                        rho: 1.0
+                        u: 0.2
+                        v: 0.0
+                        w: 0.0
+                        p: 1.0
+                2:
+                    type: outlet
+                3:
+                    type: free_stream
+                    state:
+                        rho: 1.0
+                        u: 0.2
+                        v: 0.0
+                        w: 0.0
+                        p: 1.0
+                4:
+                    type: wall
+
+        initial_condition:
+            type: constant
+            rho: 1.0
+            u: 0.2
+            v: 0.0
+            w: 0.0
+            p: 1.0
+
+        mesh:
+            type: gmsh_file
+            dim: 2
+            source:
+                file: ../data/cylinder.msh
+
+        stopping:
+            t_end: 10
+
+    sod1:
+        initial_condition:
+            type: structured_regions
+            interfaces:
+                x: [0.5]
+                y: []
+                z: []
+            rho: [1.0, 0.125]
+            u:   [0.0, 0.0]
+            v:   [0.0, 0.0]
+            w:   [0.0, 0.0]
+            p:   [1.0, 0.1]
+        stopping:
+            t_end: 0.25
+
+    sod1_2d:
+        mesh:
+            dim: 2
+            cells:
+                x: 100
+                y: 3
+                z: 1
+        initial_condition:
+            type: structured_regions
+            interfaces:
+                x: [0.5]
+                y: []
+                z: []
+            rho: [1.0, 0.125]
+            u:   [0.0, 0.0]
+            v:   [0.0, 0.0]
+            w:   [0.0, 0.0]
+            p:   [1.0, 0.1]
+#        boundary_conditions:
+#            x_min: reflective
+#            x_max: reflective
+#            y_min: reflective
+#            y_max: reflective
+        output:
+            every_steps: 20
+        stopping:
+            t_end: 0.25
+
+    sod1_2d_y:
+        mesh:
+            dim: 2
+            cells:
+                x: 200
+                y: 200
+                z: 1
+        initial_condition:
+            type: structured_regions
+            interfaces:
+                x: []
+                y: [0.5]
+                z: []
+            rho:
+                - 1.0
+                - 0.125
+            u:
+                - 0.0
+                - 0.0
+            v:
+                - 0.0
+                - 0.0
+            w:
+                - 0.0
+                - 0.0
+            p:
+                - 1.0
+                - 0.1
+        output:
+            every_steps: 100
+        stopping:
+            t_end: 0.25
+
+    lax_liu_3:
+        mesh:
+            dim: 2
+            cells:
+                x: 400
+                y: 400
+                z: 1
+            domain:
+                x: 1.0
+                y: 1.0
+                z: 1.0
+        physics:
+            eos: ideal_gas
+            parameters:
+                gamma: 1.4
+        numerics:
+            parameters:
+                cfl: 0.4
+        boundary_conditions:
+            x_min: reflective
+            x_max: reflective
+            y_min: reflective
+            y_max: reflective
+        initial_condition:
+            type: structured_regions
+            interfaces:
+                x: [0.5]
+                y: [0.5]
+                z: []
+            rho:
+                - [0.138, 0.5323]
+                - [0.5323, 1.5]
+            u:
+                - [1.206, 1.206]
+                - [0.0,   0.0]
+            v:
+                - [1.206, 0.0]
+                - [1.206, 0.0]
+            w:
+                - [0.0, 0.0]
+                - [0.0, 0.0]
+            p:
+                - [0.029, 0.3]
+                - [0.3,   1.5]
+        output:
+            every_steps: 20
+        stopping:
+            t_end: 1.5
+
+    lax_liu_12:
+        mesh:
+            dim: 2
+            cells:
+                x: 400
+                y: 400
+                z: 1
+        physics:
+            eos: ideal_gas
+            parameters:
+                gamma: 1.4
+        numerics:
+            parameters:
+                cfl: 0.4
+        boundary_conditions:
+            x_min: reflective
+            x_max: reflective
+            y_min: reflective
+            y_max: reflective
+        initial_condition:
+            type: structured_regions
+            interfaces:
+                x: [0.5]
+                y: [0.5]
+                z: []
+            rho:
+                - [1.0, 0.8]
+                - [1.0, 0.8]
+            u:
+                - [0.0, 0.0]
+                - [0.7276, 0.0]
+            v:
+                - [0.7276, 0.0]
+                - [0.0,    0.0]
+            w:
+                - [0.0, 0.0]
+                - [0.0, 0.0]
+            p:
+                - [1.0, 1.0]
+                - [1.0, 1.0]
+        output:
+            every_steps: 200
+        stopping:
+            t_end: 0.25
+
+    octant_test:
+        mesh:
+            dim: 3
+            cells:
+                x: 100
+                y: 100
+                z: 100
+        initial_condition:
+            type: structured_regions
+            interfaces:
+                x: [0.5]
+                y: [0.5]
+                z: [0.5]
+            rho:
+                -
+                    - [1.0, 0.8]
+                    - [0.7, 0.6]
+                -
+                    - [0.5, 0.4]
+                    - [0.3, 0.2]
+            u:
+                -
+                    - [0.0, 0.0]
+                    - [0.0, 0.0]
+                -
+                    - [0.0, 0.0]
+                    - [0.0, 0.0]
+            v:
+                -
+                    - [0.0, 0.0]
+                    - [0.0, 0.0]
+                -
+                    - [0.0, 0.0]
+                    - [0.0, 0.0]
+            w:
+                -
+                    - [0.0, 0.0]
+                    - [0.0, 0.0]
+                -
+                    - [0.0, 0.0]
+                    - [0.0, 0.0]
+            p:
+                -
+                    - [1.0, 1.0]
+                    - [1.0, 1.0]
+                -
+                    - [1.0, 1.0]
+                    - [1.0, 1.0]
+
+    detonation:
+        mesh:
+            dim: 2
+            cells:
+                x: 200
+                y: 3
+                z: 1
+            domain:
+                x: 1.0
+                y: 0.01
+                z: 1.0
+
+        physics:
+            eos: ideal_gas
+            parameters:
+                gamma: 3.0
+
+        numerics:
+            method: mader
+            parameters:
+                time_integrator: mader
+                reconstruction: p0
+                riemann_solver: exact
+                cfl: 0.5
+                viscosity: true
+
+        boundary_conditions:
+            x_min: reflective
+            x_max: reflective
+            y_min: reflective
+            y_max: reflective
+
+        initial_condition:
+            type: structured_regions
+            interfaces:
+                x: [ 0.02 ]
+                y: [ ]
+                z: [ ]
+            rho: [ 2.4533333333, 1.84 ]
+            u: [ 0.0, 0.0 ]
+            v: [ 0.0, 0.0 ]
+            w: [ 0.0, 0.0 ]
+            p: [ 0.7112533333, 1.0e-8 ]
+            reactant_mass_fraction: [ 0.0, 1.0 ]
+
+        stopping:
+            t_end: 0.2
+
+
+    corner:
+        mesh:
+            dim: 2
+            cells:
+                x: 140
+                y: 80
+                z: 1
+            domain:
+                x: 9.0
+                y: 4.0
+                z: 1.0
+
+        physics:
+            eos: ideal_gas
+            parameters:
+                gamma: 3.0
+
+        boundary_conditions:
+            x_min: reflective
+            x_max: outlet
+            y_min: reflective
+            y_max: reflective
+
+        initial_condition:
+            type: structured_regions
+            interfaces:
+                x: [ 0.05 ]
+                y: [ ]
+                z: [ ]
+            rho: [ 2.4533333333, 1.84 ]
+            u: [ 0.0, 0.0 ]
+            v: [ 0.0, 0.0 ]
+            w: [ 0.0, 0.0 ]
+            p: [ 0.35648, 1.0e-8 ]
+            reactant_mass_fraction: [ 0.0, 1.0 ]
+
+        immersed_boundaries:
+            enabled: true
+            objects:
+                - type: rectangle
+                  cx: 1
+                  cy: 1.5
+                  size_x: 2
+                  size_y: 3
+
+        parallel:
+            mpi: true
+
+        stopping:
+            t_end: 1000.0
+            max_steps: 0
+
+
+#    gmsh_case_template:
+#        mesh:
+#            type: unstructured
+#            source:
+#                format: geo
+#                file: meshes/example.geo
+#                generator: gmsh
+#        physics:
+#            eos: ideal_gas
+#            parameters:
+#                gamma: 1.4
+#        numerics:
+#            method: godunov
+#            parameters:
+#                time_integrator: euler
+#                reconstruction: p0
+#                riemann_solver: hllc
+#                cfl: 0.4
+#        boundary_conditions:
+#            default: outlet
+#        initial_condition:
+#            type: region_markers
+#            regions:
+#                - marker: fluid_1
+#                  rho: 1.0
+#                  u: 0.0
+#                  v: 0.0
+#                  w: 0.0
+#                  p: 1.0
+#                - marker: fluid_2
+#                  rho: 0.125
+#                  u: 0.0
+#                  v: 0.0
+#                  w: 0.0
+#                  p: 0.1
+
+cfd-unstructured-parallel/
+├── cmake/
+│   ├── Dependencies.cmake
+│   ├── Documentation.cmake
+│   ├── DoxygenFetcher.cmake
+│   └── PackageFetcher.cmake
+├── include/
+│   ├── bc/
+│   │   ├── BoundaryCondition.hpp
+│   │   ├── BoundaryFactory.hpp
+│   │   ├── BoundaryManager.hpp
+│   │   ├── FreeStreamBoundary.hpp
+│   │   ├── InletBoundary.hpp
+│   │   ├── NonReflectiveBoundary.hpp
+│   │   ├── OutletBoundary.hpp
+│   │   ├── PeriodicBoundary.hpp
+│   │   ├── ReflectiveBoundary.hpp
+│   │   ├── SymmetryBoundary.hpp
+│   │   └── WallBoundary.hpp
+│   ├── config/
+│   │   ├── CliParser.hpp
+│   │   ├── ConfigParser.hpp
+│   │   ├── InitialConditionInitializer.hpp
+│   │   ├── InitialConditions.hpp
+│   │   ├── Settings.hpp
+│   │   └── YamlConfigParser.hpp
+│   ├── data/
+│   │   ├── DataLayer.hpp
+│   │   ├── Variables.hpp
+│   │   └── Workspace.hpp
+│   ├── geometry/
+│   │   ├── Cell.hpp
+│   │   ├── DelaunayMeshBuilder.hpp
+│   │   ├── DelaunayTriangulator.hpp
+│   │   ├── Face.hpp
+│   │   ├── GmshMeshBuilder.hpp
+│   │   ├── Mesh.hpp
+│   │   ├── Node.hpp
+│   │   ├── PointCloudBuilder.hpp
+│   │   └── StructuredMeshBuilder.hpp
+│   ├── output/
+│   │   ├── StepWriter.hpp
+│   │   ├── VTKRecomposer.hpp
+│   │   ├── VTKWriter.hpp
+│   │   └── WriterFactory.hpp
+│   ├── parallel/
+│   │   ├── DomainDecomposition.hpp
+│   │   ├── HaloExchange.hpp
+│   │   ├── HaloSerialization.hpp
+│   │   ├── MPIContext.hpp
+│   │   ├── MeshDistribution.hpp
+│   │   ├── MeshSerialization.hpp
+│   │   └── StateSynchronizer.hpp
+│   ├── reconstruction/
+│   │   ├── P0Reconstruction.hpp
+│   │   ├── P1Reconstruction.hpp
+│   │   └── Reconstruction.hpp
+│   ├── riemann/
+│   │   ├── ExactIdealGasRiemannSolver.hpp
+│   │   ├── HLLCRiemannSolver.hpp
+│   │   ├── HLLRiemannSolver.hpp
+│   │   ├── RiemannHelpers.hpp
+│   │   ├── RiemannSolver.hpp
+│   │   ├── RoeRiemannSolver.hpp
+│   │   └── RusanovRiemannSolver.hpp
+│   ├── solver/
+│   │   ├── FiniteVolumeSolver.hpp
+│   │   ├── PositivityLimiter.hpp
+│   │   ├── Solver.hpp
+│   │   ├── SolverFactory.hpp
+│   │   └── TimeStepCalculator.hpp
+│   ├── spatial/
+│   │   ├── GodunovKolganRodionovSpatialOperator.hpp
+│   │   ├── GodunovSpatialOperator.hpp
+│   │   └── SpatialOperator.hpp
+│   ├── time/
+│   │   ├── ForwardEulerTimeIntegrator.hpp
+│   │   ├── SSPRK2TimeIntegrator.hpp
+│   │   ├── SSPRK3TimeIntegrator.hpp
+│   │   └── TimeIntegrator.hpp
+│   ├── utils/
+│   │   └── StringUtils.hpp
+│   ├── RunManager.hpp
+│   └── Simulation.hpp
+├── src/
+│   ├── bc/
+│   │   ├── BoundaryFactory.cpp
+│   │   ├── BoundaryManager.cpp
+│   │   ├── FreeStreamBoundary.cpp
+│   │   ├── InletBoundary.cpp
+│   │   ├── NonReflectiveBoundary.cpp
+│   │   ├── OutletBoundary.cpp
+│   │   ├── PeriodicBoundary.cpp
+│   │   ├── ReflectiveBoundary.cpp
+│   │   ├── SymmetryBoundary.cpp
+│   │   └── WallBoundary.cpp
+│   ├── config/
+│   │   ├── CliParser.cpp
+│   │   ├── ConfigParser.cpp
+│   │   ├── InitialConditionInitializer.cpp
+│   │   └── YamlConfigParser.cpp
+│   ├── data/
+│   │   ├── DataLayer.cpp
+│   │   ├── Variables.cpp
+│   │   └── Workspace.cpp
+│   ├── geometry/
+│   │   ├── DelaunayMeshBuilder.cpp
+│   │   ├── DelaunayTriangulator.cpp
+│   │   ├── Face.cpp
+│   │   ├── GmshMeshBuilder.cpp
+│   │   ├── Mesh.cpp
+│   │   ├── PointCloudBuilder.cpp
+│   │   └── StructuredMeshBuilder.cpp
+│   ├── output/
+│   │   ├── VTKRecomposer.cpp
+│   │   ├── VTKWriter.cpp
+│   │   └── WriterFactory.cpp
+│   ├── parallel/
+│   │   ├── DomainDecomposition.cpp
+│   │   ├── HaloExchange.cpp
+│   │   ├── HaloSerialization.cpp
+│   │   ├── MPIContext.cpp
+│   │   ├── MeshDistribution.cpp
+│   │   └── MeshSerialization.cpp
+│   ├── reconstruction/
+│   │   ├── P0Reconstruction.cpp
+│   │   └── P1Reconstruction.cpp
+│   ├── riemann/
+│   │   ├── AcousticRiemannSolver.cpp
+│   │   ├── ExactIdealGasRiemannSolver.cpp
+│   │   ├── HLLCRiemannSolver.cpp
+│   │   ├── HLLRiemannSolver.cpp
+│   │   ├── OsherRiemannSolver.cpp
+│   │   ├── RoeRiemannSolver.cpp
+│   │   └── RusanovRiemannSolver.cpp
+│   ├── solver/
+│   │   ├── FiniteVolumeSolver.cpp
+│   │   ├── PositivityLimiter.cpp
+│   │   ├── SolverFactory.cpp
+│   │   └── TimeStepCalculator.cpp
+│   ├── spatial/
+│   │   ├── GodunovKolganRodionovSpatialOperator.cpp
+│   │   └── GodunovSpatialOperator.cpp
+│   ├── time/
+│   │   ├── ForwardEulerTimeIntegrator.cpp
+│   │   ├── SSPRK2TimeIntegrator.cpp
+│   │   └── SSPRK3TimeIntegrator.cpp
+│   ├── utils/
+│   │   └── StringUtils.cpp
+│   ├── RunManager.cpp
+│   ├── Simulation.cpp
+│   └── main.cpp
+├── CMakeLists.txt
+└── config.yaml
