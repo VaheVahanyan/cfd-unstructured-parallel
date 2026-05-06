@@ -1,6 +1,7 @@
 #include "parallel/MeshDistribution.hpp"
 
 #include <stdexcept>
+#include <utility>
 #include <vector>
 
 #include <mpi.h>
@@ -10,11 +11,12 @@
 #include "parallel/MPIContext.hpp"
 #include "parallel/MeshSerialization.hpp"
 
-namespace {
+namespace
+{
     void SendBuffer(const std::vector<char>& buffer,
-                    int dst_rank,
-                    int tag_size,
-                    int tag_payload,
+                    const int dst_rank,
+                    const int tag_size,
+                    const int tag_payload,
                     MPI_Comm comm) {
         const int size = static_cast<int>(buffer.size());
         MPI_Send(&size, 1, MPI_INT, dst_rank, tag_size, comm);
@@ -24,9 +26,9 @@ namespace {
         }
     }
 
-    std::vector<char> RecvBuffer(int src_rank,
-                                 int tag_size,
-                                 int tag_payload,
+    std::vector<char> RecvBuffer(const int src_rank,
+                                 const int tag_size,
+                                 const int tag_payload,
                                  MPI_Comm comm) {
         int size = 0;
         MPI_Recv(&size, 1, MPI_INT, src_rank, tag_size, comm, MPI_STATUS_IGNORE);
@@ -42,10 +44,12 @@ namespace {
 
         return buffer;
     }
-}
+} // namespace
 
-MeshDistribution::LocalPartition MeshDistribution::DistributeFromRoot(const Mesh* global_mesh,
-                                                                      const MPIContext& mpi) {
+MeshDistribution::LocalPartition MeshDistribution::DistributeFromRoot(
+    const Mesh* global_mesh,
+    const MPIContext& mpi,
+    const DomainDecomposition& decomposer) {
     constexpr int k_mesh_size_tag = 4001;
     constexpr int k_mesh_payload_tag = 4002;
     constexpr int k_halo_size_tag = 4003;
@@ -58,30 +62,24 @@ MeshDistribution::LocalPartition MeshDistribution::DistributeFromRoot(const Mesh
             throw std::runtime_error("MeshDistribution: root rank requires global mesh");
         }
 
-        const std::vector<int> part =
-            DomainDecomposition::BuildRCBPartition(*global_mesh, mpi.Size());
+        const std::vector<int> part = decomposer.ComputePartition(*global_mesh, mpi.Size());
 
         for (int rank = 0; rank < mpi.Size(); ++rank) {
             DomainDecomposition::Result local_result =
-                DomainDecomposition::BuildLocalResultForRank(*global_mesh, part, rank);
+                decomposer.BuildLocalResultForRank(*global_mesh, part, rank);
 
-            std::vector<char> mesh_buffer =
-                MeshSerialization::Pack(local_result.local_mesh);
-
-            std::vector<char> halo_buffer =
-                HaloSerialization::Pack(local_result.halos);
+            std::vector<char> mesh_buffer = MeshSerialization::Pack(local_result.local_mesh);
+            std::vector<char> halo_buffer = HaloSerialization::Pack(local_result.halos);
 
             if (rank == mpi.Rank()) {
                 result.mesh = std::move(local_result.local_mesh);
                 result.halos = std::move(local_result.halos);
-            }
-            else {
+            } else {
                 SendBuffer(mesh_buffer, rank, k_mesh_size_tag, k_mesh_payload_tag, mpi.Comm());
                 SendBuffer(halo_buffer, rank, k_halo_size_tag, k_halo_payload_tag, mpi.Comm());
             }
         }
-    }
-    else {
+    } else {
         if (global_mesh != nullptr) {
             throw std::runtime_error("MeshDistribution: non-root rank must not pass global mesh");
         }

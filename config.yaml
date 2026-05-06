@@ -125,6 +125,7 @@ cases:
 
         parallel:
             mpi: true
+            decomposition: metis
 
     naca:
         boundary_conditions:

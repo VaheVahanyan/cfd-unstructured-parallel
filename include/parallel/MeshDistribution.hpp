@@ -1,7 +1,6 @@
 #ifndef MESHDISTRIBUTION_HPP
 #define MESHDISTRIBUTION_HPP
 
-#include <memory>
 #include <vector>
 
 #include "geometry/Mesh.hpp"
@@ -9,6 +8,10 @@
 
 class MPIContext;
 
+/**
+ * @class MeshDistribution
+ * @brief Distributes a global mesh from the root MPI rank to all other ranks.
+ */
 class MeshDistribution final {
 public:
     struct LocalPartition final {
@@ -17,15 +20,17 @@ public:
     };
 
     /**
-     * @brief Root owns global mesh, decomposes it, and distributes local meshes to all ranks.
+     * @brief Performs central partitioning on the root rank and distributes data via MPI.
      *
-     * On root:
-     * - global_mesh must be non-null
-     * On non-root:
-     * - global_mesh must be null
+     * @param global_mesh The global mesh (must be valid on root, null elsewhere).
+     * @param mpi The MPI context.
+     * @param decomposer The decomposition strategy (e.g., RCB or METIS).
+     * @return Local partition containing the local mesh and halo metadata.
      */
-    [[nodiscard]] static LocalPartition DistributeFromRoot(const Mesh* global_mesh,
-                                                           const MPIContext& mpi);
+    [[nodiscard]] static LocalPartition DistributeFromRoot(
+        const Mesh* global_mesh,
+        const MPIContext& mpi,
+        const DomainDecomposition& decomposer);
 };
 
 #endif  // MESHDISTRIBUTION_HPP

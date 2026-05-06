@@ -459,6 +459,9 @@ void YamlConfigParser::ParseOutput(const YAML::Node& node, Settings& settings) {
 
 void YamlConfigParser::ParseParallel(const YAML::Node& node, Settings& settings) {
     AssignIfPresent(node, "mpi", settings.mpi_enabled);
+    if (node["decomposition"]) {
+        settings.domain_decomposition_method = node["decomposition"].as<std::string>();
+    }
 }
 
 void YamlConfigParser::ApplyCaseOverrides(const YAML::Node& case_node,

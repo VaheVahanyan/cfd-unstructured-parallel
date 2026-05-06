@@ -202,6 +202,10 @@ void Simulation::ValidateBoundaryCoverage() const {
     }
 }
 
+#include "parallel/RCBDecomposition.hpp"
+#include "parallel/METISDecomposition.hpp"
+// Убедись, что эти заголовочные файлы подключены в начале файла Simulation.cpp
+
 void Simulation::BuildMesh() {
     mpi_context_ = std::make_unique<MPIContext>();
 
@@ -211,16 +215,28 @@ void Simulation::BuildMesh() {
         return;
     }
 
+    // 1. Выбираем стратегию декомпозиции на основе настроек
+    std::unique_ptr<DomainDecomposition> decomposer;
+    if (settings_.domain_decomposition_method == "metis") {
+        decomposer = std::make_unique<METISDecomposition>();
+    } else if (settings_.domain_decomposition_method == "rcb" || settings_.domain_decomposition_method.empty()) {
+        decomposer = std::make_unique<RCBDecomposition>();
+    } else {
+        throw std::runtime_error("Simulation: unknown domain decomposition method '" +
+                                 settings_.domain_decomposition_method + "'");
+    }
+
     MeshDistribution::LocalPartition local_partition;
 
+    // 2. Распределяем сетку с использованием выбранного метода
     if (mpi_context_->IsRoot()) {
         std::shared_ptr<Mesh> global_mesh = CreateMesh();
         local_partition =
-            MeshDistribution::DistributeFromRoot(global_mesh.get(), *mpi_context_);
+            MeshDistribution::DistributeFromRoot(global_mesh.get(), *mpi_context_, *decomposer);
     }
     else {
         local_partition =
-            MeshDistribution::DistributeFromRoot(nullptr, *mpi_context_);
+            MeshDistribution::DistributeFromRoot(nullptr, *mpi_context_, *decomposer);
     }
 
     mesh_ = std::make_shared<Mesh>(std::move(local_partition.mesh));

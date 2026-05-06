@@ -192,6 +192,7 @@ struct Settings {
 
     // ==================== Parallel / immersed ====================
     bool mpi_enabled = false;
+    std::string domain_decomposition_method = "rcb";
 
     [[nodiscard]] bool HasOutputFormat(const std::string& format) const {
         for (const std::string& fmt : output_formats) {

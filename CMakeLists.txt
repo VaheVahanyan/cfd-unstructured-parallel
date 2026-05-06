@@ -14,6 +14,16 @@ set(FETCHCONTENT_TRY_FIND_PACKAGE_MODE ALWAYS)
 include(FetchContent)
 
 find_package(MPI REQUIRED)
+find_path(METIS_INCLUDE_DIR NAMES metis.h)
+
+find_library(METIS_LIBRARY NAMES metis)
+
+if(METIS_INCLUDE_DIR AND METIS_LIBRARY)
+    message(STATUS "Found METIS include: ${METIS_INCLUDE_DIR}")
+    message(STATUS "Found METIS library: ${METIS_LIBRARY}")
+else()
+    message(FATAL_ERROR "METIS library not found! Please install it or specify paths manually.")
+endif()
 
 include(cmake/Dependencies.cmake)
 #include(cmake/Documentation.cmake)
@@ -71,6 +81,8 @@ add_executable(${NAME}
     src/parallel/MPIContext.cpp
     src/parallel/HaloExchange.cpp
     src/parallel/DomainDecomposition.cpp
+    src/parallel/METISDecomposition.cpp
+    src/parallel/RCBDecomposition.cpp
     src/parallel/MeshDistribution.cpp
     src/parallel/MeshSerialization.cpp
     src/parallel/HaloSerialization.cpp
@@ -102,6 +114,7 @@ target_include_directories(${NAME}
     PRIVATE
         ${PROJECT_SOURCE_DIR}/include
         ${PROJECT_SOURCE_DIR}/include/external
+        ${METIS_INCLUDE_DIR}
 )
 
 target_link_libraries(${NAME}
@@ -132,4 +145,6 @@ target_link_libraries(${NAME}
         MPI::MPI_CXX
 
         gmsh::gmsh
+
+        ${METIS_LIBRARY}
 )
