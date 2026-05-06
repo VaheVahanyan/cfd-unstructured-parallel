@@ -26,14 +26,6 @@ const xt::xtensor<double, 2>& DataLayer::U() const {
     return U_;
 }
 
-xt::xtensor<double, 1>& DataLayer::ReactantMassFraction() {
-    return reactant_mass_fraction_;
-}
-
-const xt::xtensor<double, 1>& DataLayer::ReactantMassFraction() const {
-    return reactant_mass_fraction_;
-}
-
 std::size_t DataLayer::GetCellCount() const {
     return n_cells_;
 }
@@ -41,15 +33,12 @@ std::size_t DataLayer::GetCellCount() const {
 bool DataLayer::IsAllocated() const {
     return
         U_.dimension() == 2 &&
-        reactant_mass_fraction_.dimension() == 1 &&
         U_.shape()[0] == n_cells_ &&
-        U_.shape()[1] == k_nvar &&
-        reactant_mass_fraction_.shape()[0] == n_cells_;
+        U_.shape()[1] == k_nvar;
 }
 
 void DataLayer::Allocate(const std::size_t n_cells) {
     n_cells_ = n_cells;
 
     U_ = xt::zeros<double>({n_cells_, k_nvar});
-    reactant_mass_fraction_ = xt::zeros<double>({n_cells_});
 }

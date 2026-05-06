@@ -39,17 +39,13 @@ namespace {
         if (axis == 0) {
             return cell.center_x;
         }
-        if (axis == 1) {
-            return cell.center_y;
-        }
-        return cell.center_z;
+        return cell.center_y;
     }
 
     [[nodiscard]] int ChooseSplitAxis(const Mesh& mesh,
                                       const std::vector<std::size_t>& cell_ids) {
         double min_x = 0.0, max_x = 0.0;
         double min_y = 0.0, max_y = 0.0;
-        double min_z = 0.0, max_z = 0.0;
 
         bool first = true;
         for (const std::size_t cell_id : cell_ids) {
@@ -58,7 +54,6 @@ namespace {
             if (first) {
                 min_x = max_x = cell.center_x;
                 min_y = max_y = cell.center_y;
-                min_z = max_z = cell.center_z;
                 first = false;
                 continue;
             }
@@ -68,14 +63,10 @@ namespace {
 
             min_y = std::min(min_y, cell.center_y);
             max_y = std::max(max_y, cell.center_y);
-
-            min_z = std::min(min_z, cell.center_z);
-            max_z = std::max(max_z, cell.center_z);
         }
 
         const double span_x = max_x - min_x;
         const double span_y = (mesh.GetDim() >= 2) ? (max_y - min_y) : -1.0;
-        const double span_z = (mesh.GetDim() >= 3) ? (max_z - min_z) : -1.0;
 
         if (mesh.GetDim() == 1) {
             return 0;
@@ -85,13 +76,10 @@ namespace {
             return (span_x >= span_y) ? 0 : 1;
         }
 
-        if (span_x >= span_y && span_x >= span_z) {
+        if (span_x >= span_y) {
             return 0;
         }
-        if (span_y >= span_z) {
-            return 1;
-        }
-        return 2;
+        return 1;
     }
 
     void BuildRCBRecursive(const Mesh& mesh,
@@ -403,7 +391,6 @@ namespace {
 
                 local_face.normal_x *= -1.0;
                 local_face.normal_y *= -1.0;
-                local_face.normal_z *= -1.0;
 
                 remap_face_nodes_to_local(local_face);
                 add_local_face(local_face);

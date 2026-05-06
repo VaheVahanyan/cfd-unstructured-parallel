@@ -47,8 +47,8 @@ add_executable(${NAME}
     src/riemann/RusanovRiemannSolver.cpp
     src/riemann/HLLRiemannSolver.cpp
     src/riemann/HLLCRiemannSolver.cpp
-    src/riemann/RoeRiemannSolver.cpp
-    src/riemann/ExactIdealGasRiemannSolver.cpp
+#    src/riemann/RoeRiemannSolver.cpp
+#    src/riemann/ExactIdealGasRiemannSolver.cpp
 
     src/output/WriterFactory.cpp
     src/output/VTKWriter.cpp
@@ -59,10 +59,10 @@ add_executable(${NAME}
     src/data/Workspace.cpp
 
     src/geometry/GmshMeshBuilder.cpp
-    src/geometry/DelaunayMeshBuilder.cpp
-    src/geometry/DelaunayTriangulator.cpp
-    src/geometry/PointCloudBuilder.cpp
-    src/geometry/StructuredMeshBuilder.cpp
+#    src/geometry/DelaunayMeshBuilder.cpp
+#    src/geometry/DelaunayTriangulator.cpp
+#    src/geometry/PointCloudBuilder.cpp
+#    src/geometry/StructuredMeshBuilder.cpp
     src/geometry/Mesh.cpp
     include/geometry/Node.hpp
     include/geometry/Cell.hpp
@@ -74,7 +74,6 @@ add_executable(${NAME}
     src/parallel/MeshDistribution.cpp
     src/parallel/MeshSerialization.cpp
     src/parallel/HaloSerialization.cpp
-    src/parallel/DomainDecomposition.cpp
     include/parallel/StateSynchronizer.hpp
 
     src/config/ConfigParser.cpp

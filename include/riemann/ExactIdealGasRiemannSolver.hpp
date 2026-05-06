@@ -97,10 +97,8 @@ private:
                                      const FaceNormal& normal,
                                      double t1_x,
                                      double t1_y,
-                                     double t1_z,
                                      double t2_x,
                                      double t2_y,
-                                     double t2_z,
                                      double& u_n,
                                      double& u_t1,
                                      double& u_t2) const;

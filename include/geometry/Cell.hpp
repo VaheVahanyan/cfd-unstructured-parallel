@@ -33,7 +33,6 @@ struct Cell final {
     /** @brief Cell center coordinates. */
     double center_x = 0.0;
     double center_y = 0.0;
-    double center_z = 0.0;
 
     /**
      * @brief Cell measure.

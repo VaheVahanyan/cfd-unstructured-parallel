@@ -24,13 +24,10 @@ double RoeRiemannSolver::EntropyFix(const double lambda,
 void RoeRiemannSolver::BuildTangentialBasis(const FaceNormal& normal,
                                             double& t1_x,
                                             double& t1_y,
-                                            double& t1_z,
                                             double& t2_x,
-                                            double& t2_y,
-                                            double& t2_z) const {
+                                            double& t2_y) const {
     double ref_x = 0.0;
     double ref_y = 0.0;
-    double ref_z = 0.0;
 
     if (std::abs(normal.x) < 0.9) {
         ref_x = 1.0;
@@ -39,14 +36,13 @@ void RoeRiemannSolver::BuildTangentialBasis(const FaceNormal& normal,
         ref_y = 1.0;
     }
 
-    const double dot = ref_x * normal.x + ref_y * normal.y + ref_z * normal.z;
+    const double dot = ref_x * normal.x + ref_y * normal.y;
 
     t1_x = ref_x - dot * normal.x;
     t1_y = ref_y - dot * normal.y;
-    t1_z = ref_z - dot * normal.z;
 
     const double t1_norm =
-        std::sqrt(t1_x * t1_x + t1_y * t1_y + t1_z * t1_z);
+        std::sqrt(t1_x * t1_x + t1_y * t1_y);
 
     if (t1_norm <= 1e-14) {
         throw std::runtime_error(
@@ -56,14 +52,12 @@ void RoeRiemannSolver::BuildTangentialBasis(const FaceNormal& normal,
 
     t1_x /= t1_norm;
     t1_y /= t1_norm;
-    t1_z /= t1_norm;
 
     t2_x = normal.y * t1_z - normal.z * t1_y;
     t2_y = normal.z * t1_x - normal.x * t1_z;
-    t2_z = normal.x * t1_y - normal.y * t1_x;
 
     const double t2_norm =
-        std::sqrt(t2_x * t2_x + t2_y * t2_y + t2_z * t2_z);
+        std::sqrt(t2_x * t2_x + t2_y * t2_y);
 
     if (t2_norm <= 1e-14) {
         throw std::runtime_error(
@@ -80,16 +74,14 @@ void RoeRiemannSolver::ProjectVelocityToLocalBasis(const PrimitiveCell& state,
                                                    const FaceNormal& normal,
                                                    const double t1_x,
                                                    const double t1_y,
-                                                   const double t1_z,
                                                    const double t2_x,
                                                    const double t2_y,
-                                                   const double t2_z,
                                                    double& u_n,
                                                    double& u_t1,
                                                    double& u_t2) const {
-    u_n = state.u * normal.x + state.v * normal.y + state.w * normal.z;
-    u_t1 = state.u * t1_x + state.v * t1_y + state.w * t1_z;
-    u_t2 = state.u * t2_x + state.v * t2_y + state.w * t2_z;
+    u_n = state.u * normal.x + state.v * normal.y;
+    u_t1 = state.u * t1_x + state.v * t1_y;
+    u_t2 = state.u * t2_x + state.v * t2_y;
 }
 
 void RoeRiemannSolver::ComposeVectorFromLocalBasis(const double v_n,
@@ -98,16 +90,13 @@ void RoeRiemannSolver::ComposeVectorFromLocalBasis(const double v_n,
                                                    const FaceNormal& normal,
                                                    const double t1_x,
                                                    const double t1_y,
-                                                   const double t1_z,
                                                    const double t2_x,
                                                    const double t2_y,
-                                                   const double t2_z,
                                                    double& v_x,
                                                    double& v_y,
                                                    double& v_z) const {
     v_x = v_n * normal.x + v_t1 * t1_x + v_t2 * t2_x;
     v_y = v_n * normal.y + v_t1 * t1_y + v_t2 * t2_y;
-    v_z = v_n * normal.z + v_t1 * t1_z + v_t2 * t2_z;
 }
 
 ConservativeCell RoeRiemannSolver::ComputeFlux(const PrimitiveCell& left,
@@ -126,15 +115,15 @@ ConservativeCell RoeRiemannSolver::ComputeFlux(const PrimitiveCell& left,
     double t2_x = 0.0;
     double t2_y = 0.0;
     double t2_z = 0.0;
-    BuildTangentialBasis(normal, t1_x, t1_y, t1_z, t2_x, t2_y, t2_z);
+    BuildTangentialBasis(normal, t1_x, t1_y, t2_x, t2_y);
 
     double un_left = 0.0;
     double ut1_left = 0.0;
     double ut2_left = 0.0;
     ProjectVelocityToLocalBasis(left,
                                 normal,
-                                t1_x, t1_y, t1_z,
-                                t2_x, t2_y, t2_z,
+                                t1_x, t1_y,
+                                t2_x, t2_y,
                                 un_left, ut1_left, ut2_left);
 
     double un_right = 0.0;
@@ -142,8 +131,8 @@ ConservativeCell RoeRiemannSolver::ComputeFlux(const PrimitiveCell& left,
     double ut2_right = 0.0;
     ProjectVelocityToLocalBasis(right,
                                 normal,
-                                t1_x, t1_y, t1_z,
-                                t2_x, t2_y, t2_z,
+                                t1_x, t1_y,
+                                t2_x, t2_y,
                                 un_right, ut1_right, ut2_right);
 
     const PrimitiveCell left_local{
@@ -320,9 +309,9 @@ ConservativeCell RoeRiemannSolver::ComputeFlux(const PrimitiveCell& left,
                                 flux_mom_t1_local,
                                 flux_mom_t2_local,
                                 normal,
-                                t1_x, t1_y, t1_z,
-                                t2_x, t2_y, t2_z,
-                                flux.rhoU, flux.rhoV, flux.rhoW);
+                                t1_x, t1_y,
+                                t2_x, t2_y,
+                                flux.rhoU, flux.rhoV);
 
     return flux;
 }

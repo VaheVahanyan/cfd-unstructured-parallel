@@ -31,7 +31,6 @@ double TimeStepCalculator::ComputeDt(const DataLayer& layer,
         U_cell.rho = U(cell_id, DataLayer::k_rho);
         U_cell.rhoU = U(cell_id, DataLayer::k_rhoU);
         U_cell.rhoV = U(cell_id, DataLayer::k_rhoV);
-        U_cell.rhoW = U(cell_id, DataLayer::k_rhoW);
         U_cell.E = U(cell_id, DataLayer::k_E);
 
         primitive_by_cell[cell_id] = PrimitiveFromConservativeCell(U_cell, gamma);
@@ -51,12 +50,10 @@ double TimeStepCalculator::ComputeDt(const DataLayer& layer,
             FaceNormal normal;
             normal.x = face.normal_x;
             normal.y = face.normal_y;
-            normal.z = face.normal_z;
 
             if (face.owner_cell_id != cell.local_id) {
                 normal.x = -normal.x;
                 normal.y = -normal.y;
-                normal.z = -normal.z;
             }
 
             const PrimitiveCell& w = primitive_by_cell[cell.local_id];

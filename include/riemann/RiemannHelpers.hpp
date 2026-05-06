@@ -45,28 +45,19 @@ namespace riemann {
     }
 
     /**
-     * @brief Compose conservative momentum components (rhoU,rhoV,rhoW) from (rho, un, ut1, ut2).
+     * @brief Compose conservative momentum components (rhoU,rhoV) from (rho, un, ut1, ut2).
      *
      * Inverse mapping to SplitVelocity.
      */
-    inline void ComposeMomentum(const double rho, const double un, const double ut1, const double ut2, const Axis axis,
-                                double& rhoU, double& rhoV, double& rhoW) {
+    inline void ComposeMomentum(const double rho, const double un, const double ut1, const Axis axis,
+                                double& rhoU, double& rhoV) {
         if (axis == Axis::X) {
             rhoU = rho * un;
             rhoV = rho * ut1;
-            rhoW = rho * ut2;
             return;
         }
-        if (axis == Axis::Y) {
             rhoU = rho * ut1;
             rhoV = rho * un;
-            rhoW = rho * ut2;
-            return;
-        }
-        // Axis::Z
-        rhoU = rho * ut1;
-        rhoV = rho * ut2;
-        rhoW = rho * un;
     }
 
     /**

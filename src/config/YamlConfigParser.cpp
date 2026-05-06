@@ -43,7 +43,6 @@ namespace {
         AssignIfPresent(node, "rho", state.rho);
         AssignIfPresent(node, "u", state.u);
         AssignIfPresent(node, "v", state.v);
-        AssignIfPresent(node, "w", state.w);
         AssignIfPresent(node, "p", state.p);
         return state;
     }
@@ -141,9 +140,6 @@ void YamlConfigParser::ParseDefaults(const YAML::Node& defaults_node, Settings& 
     if (defaults_node["parallel"]) {
         ParseParallel(defaults_node["parallel"], settings);
     }
-    if (defaults_node["immersed_boundaries"]) {
-        ParseImmersedBoundaries(defaults_node["immersed_boundaries"], settings);
-    }
 
     ValidateSettingsConsistency(settings);
 }
@@ -209,12 +205,6 @@ void YamlConfigParser::ParseMesh(const YAML::Node& node, Settings& settings) {
             if (domain["y_max"]) {
                 structured.y_max = domain["y_max"].as<double>();
             }
-            if (domain["z_min"]) {
-                structured.z_min = domain["z_min"].as<double>();
-            }
-            if (domain["z_max"]) {
-                structured.z_max = domain["z_max"].as<double>();
-            }
 
             // Backward-compatible support
             if (domain["x"]) {
@@ -224,10 +214,6 @@ void YamlConfigParser::ParseMesh(const YAML::Node& node, Settings& settings) {
             if (domain["y"]) {
                 structured.y_min = 0.0;
                 structured.y_max = domain["y"].as<double>();
-            }
-            if (domain["z"]) {
-                structured.z_min = 0.0;
-                structured.z_max = domain["z"].as<double>();
             }
         }
 
@@ -323,10 +309,6 @@ void YamlConfigParser::ParsePhysics(const YAML::Node& node, Settings& settings) 
 
     const YAML::Node parameters = node["parameters"];
     AssignIfPresent(parameters, "gamma", settings.gamma);
-
-    if (parameters["reactant_mass_fraction"]) {
-        settings.Q_user = parameters["reactant_mass_fraction"].as<double>();
-    }
 }
 
 void YamlConfigParser::ParseNumerics(const YAML::Node& node, Settings& settings) {
@@ -479,14 +461,6 @@ void YamlConfigParser::ParseParallel(const YAML::Node& node, Settings& settings)
     AssignIfPresent(node, "mpi", settings.mpi_enabled);
 }
 
-void YamlConfigParser::ParseImmersedBoundaries(const YAML::Node& node, Settings& settings) {
-    AssignIfPresent(node, "enabled", settings.immersed_enabled);
-
-    if (node["objects"]) {
-        settings.immersed_objects = ParseImmersedObjects(node["objects"]);
-    }
-}
-
 void YamlConfigParser::ApplyCaseOverrides(const YAML::Node& case_node,
                                           InitialConditions& ic,
                                           const Settings& defaults) {
@@ -508,10 +482,6 @@ void YamlConfigParser::ApplyCaseOverrides(const YAML::Node& case_node,
         if (physics_node["parameters"]) {
             const YAML::Node parameters = physics_node["parameters"];
             AssignOptionalIfPresent(parameters, "gamma", overrides.gamma);
-
-            if (parameters["reactant_mass_fraction"]) {
-                overrides.Q_user = parameters["reactant_mass_fraction"].as<double>();
-            }
         }
     }
 
@@ -597,15 +567,6 @@ void YamlConfigParser::ApplyCaseOverrides(const YAML::Node& case_node,
         const YAML::Node parallel_node = case_node["parallel"];
         AssignOptionalIfPresent(parallel_node, "mpi", overrides.mpi_enabled);
     }
-
-    if (case_node["immersed_boundaries"]) {
-        const YAML::Node immersed_node = case_node["immersed_boundaries"];
-        AssignOptionalIfPresent(immersed_node, "enabled", overrides.immersed_enabled);
-
-        if (immersed_node["objects"]) {
-            overrides.immersed_objects = ParseImmersedObjects(immersed_node["objects"]);
-        }
-    }
 }
 
 void YamlConfigParser::ParseInitialCondition(const YAML::Node& ic_node,
@@ -643,16 +604,12 @@ void YamlConfigParser::ParseStructuredInitialCondition(const YAML::Node& ic_node
     const YAML::Node interfaces = ic_node["interfaces"];
     structured_ic.interfaces_x = interfaces["x"] ? ReadVectorDouble(interfaces["x"]) : std::vector<double>{};
     structured_ic.interfaces_y = interfaces["y"] ? ReadVectorDouble(interfaces["y"]) : std::vector<double>{};
-    structured_ic.interfaces_z = interfaces["z"] ? ReadVectorDouble(interfaces["z"]) : std::vector<double>{};
 
     if (effective_settings.mesh.dim == 1) {
         ParseStructured1D(ic_node, structured_ic);
     }
     else if (effective_settings.mesh.dim == 2) {
         ParseStructured2D(ic_node, structured_ic);
-    }
-    else if (effective_settings.mesh.dim == 3) {
-        ParseStructured3D(ic_node, structured_ic);
     }
     else {
         throw std::runtime_error("Unsupported dimension in structured initial condition");
@@ -670,12 +627,8 @@ void YamlConfigParser::ParseConstantInitialCondition(const YAML::Node& ic_node,
     AssignIfPresent(ic_node, "rho", constant_ic.rho);
     AssignIfPresent(ic_node, "u", constant_ic.u);
     AssignIfPresent(ic_node, "v", constant_ic.v);
-    AssignIfPresent(ic_node, "w", constant_ic.w);
     AssignIfPresent(ic_node, "p", constant_ic.p);
 
-    if (ic_node["reactant_mass_fraction"]) {
-        constant_ic.reactant_mass_fraction = ic_node["reactant_mass_fraction"].as<double>();
-    }
 
     ic.constant = constant_ic;
 }
@@ -693,17 +646,16 @@ void YamlConfigParser::ParseStructured1D(const YAML::Node& ic_node, StructuredRe
         throw std::runtime_error("1D initial-condition arrays must have identical size");
     }
 
-    if (nx != ic.RegionCountX() || ic.RegionCountY() != 1 || ic.RegionCountZ() != 1) {
+    if (nx != ic.RegionCountX() || ic.RegionCountY() != 1) {
         throw std::runtime_error("1D initial-condition shape does not match interfaces");
     }
 
-    auto lift_1d = [](const std::vector<double>& src) -> Field3DValues {
-        Field3DValues dst;
+    auto lift_1d = [](const std::vector<double>& src) -> Field2DValues {
+        Field2DValues dst;
         dst.values.resize(src.size());
         for (std::size_t ix = 0; ix < src.size(); ++ix) {
             dst.values[ix].resize(1);
-            dst.values[ix][0].resize(1);
-            dst.values[ix][0][0] = src[ix];
+            dst.values[ix][0] = src[ix];
         }
         return dst;
     };
@@ -711,16 +663,7 @@ void YamlConfigParser::ParseStructured1D(const YAML::Node& ic_node, StructuredRe
     ic.rho = lift_1d(rho_1d);
     ic.u = lift_1d(u_1d);
     ic.v = lift_1d(v_1d);
-    ic.w = lift_1d(w_1d);
     ic.p = lift_1d(p_1d);
-
-    if (ic_node["reactant_mass_fraction"]) {
-        const auto lambda_1d = ReadVectorDouble(ic_node["reactant_mass_fraction"]);
-        if (lambda_1d.size() != nx) {
-            throw std::runtime_error("1D reactant_mass_fraction size must match state size");
-        }
-        ic.reactant_mass_fraction = lift_1d(lambda_1d);
-    }
 }
 
 void YamlConfigParser::ParseStructured2D(const YAML::Node& ic_node, StructuredRegionInitialCondition& ic) {
@@ -744,13 +687,12 @@ void YamlConfigParser::ParseStructured2D(const YAML::Node& ic_node, StructuredRe
             throw std::runtime_error("2D y-only initial-condition arrays must match y-region count");
         }
 
-        auto lift_y_only = [](const std::vector<double>& src) -> Field3DValues {
-            Field3DValues dst;
+        auto lift_y_only = [](const std::vector<double>& src) -> Field2DValues {
+            Field2DValues dst;
             dst.values.resize(1);
             dst.values[0].resize(src.size());
             for (std::size_t iy = 0; iy < src.size(); ++iy) {
-                dst.values[0][iy].resize(1);
-                dst.values[0][iy][0] = src[iy];
+                dst.values[0][iy] = src[iy];
             }
             return dst;
         };
@@ -758,16 +700,8 @@ void YamlConfigParser::ParseStructured2D(const YAML::Node& ic_node, StructuredRe
         ic.rho = lift_y_only(rho_1d);
         ic.u = lift_y_only(u_1d);
         ic.v = lift_y_only(v_1d);
-        ic.w = lift_y_only(w_1d);
         ic.p = lift_y_only(p_1d);
 
-        if (ic_node["reactant_mass_fraction"]) {
-            const auto lambda_1d = ReadVectorDouble(ic_node["reactant_mass_fraction"]);
-            if (lambda_1d.size() != ny) {
-                throw std::runtime_error("2D y-only reactant_mass_fraction size must match y-region count");
-            }
-            ic.reactant_mass_fraction = lift_y_only(lambda_1d);
-        }
         return;
     }
 
@@ -777,12 +711,12 @@ void YamlConfigParser::ParseStructured2D(const YAML::Node& ic_node, StructuredRe
     const auto w_2d = ReadMatrixDouble(ic_node["w"]);
     const auto p_2d = ReadMatrixDouble(ic_node["p"]);
 
-    auto lift_2d = [&](const std::vector<std::vector<double>>& src) -> Field3DValues {
+    auto lift_2d = [&](const std::vector<std::vector<double>>& src) -> Field2DValues {
         if (src.size() != nx) {
             throw std::runtime_error("2D initial-condition x-size does not match interfaces");
         }
 
-        Field3DValues dst;
+        Field2DValues dst;
         dst.values.resize(nx);
 
         for (std::size_t ix = 0; ix < nx; ++ix) {
@@ -792,8 +726,7 @@ void YamlConfigParser::ParseStructured2D(const YAML::Node& ic_node, StructuredRe
 
             dst.values[ix].resize(ny);
             for (std::size_t iy = 0; iy < ny; ++iy) {
-                dst.values[ix][iy].resize(1);
-                dst.values[ix][iy][0] = src[ix][iy];
+                dst.values[ix][iy] = src[ix][iy];
             }
         }
 
@@ -803,63 +736,7 @@ void YamlConfigParser::ParseStructured2D(const YAML::Node& ic_node, StructuredRe
     ic.rho = lift_2d(rho_2d);
     ic.u = lift_2d(u_2d);
     ic.v = lift_2d(v_2d);
-    ic.w = lift_2d(w_2d);
     ic.p = lift_2d(p_2d);
-
-    if (ic_node["reactant_mass_fraction"]) {
-        const auto lambda_2d = ReadMatrixDouble(ic_node["reactant_mass_fraction"]);
-        ic.reactant_mass_fraction = lift_2d(lambda_2d);
-    }
-}
-
-void YamlConfigParser::ParseStructured3D(const YAML::Node& ic_node, StructuredRegionInitialCondition& ic) {
-    const std::size_t nx = ic.RegionCountX();
-    const std::size_t ny = ic.RegionCountY();
-    const std::size_t nz = ic.RegionCountZ();
-
-    const auto rho_3d = ReadTensorDouble(ic_node["rho"]);
-    const auto u_3d = ReadTensorDouble(ic_node["u"]);
-    const auto v_3d = ReadTensorDouble(ic_node["v"]);
-    const auto w_3d = ReadTensorDouble(ic_node["w"]);
-    const auto p_3d = ReadTensorDouble(ic_node["p"]);
-
-    auto lift_3d = [&](const std::vector<std::vector<std::vector<double>>>& src) -> Field3DValues {
-        if (src.size() != nx) {
-            throw std::runtime_error("3D initial-condition x-size does not match interfaces");
-        }
-
-        Field3DValues dst;
-        dst.values.resize(nx);
-
-        for (std::size_t ix = 0; ix < nx; ++ix) {
-            if (src[ix].size() != ny) {
-                throw std::runtime_error("3D initial-condition y-size does not match interfaces");
-            }
-
-            dst.values[ix].resize(ny);
-
-            for (std::size_t iy = 0; iy < ny; ++iy) {
-                if (src[ix][iy].size() != nz) {
-                    throw std::runtime_error("3D initial-condition z-size does not match interfaces");
-                }
-
-                dst.values[ix][iy] = src[ix][iy];
-            }
-        }
-
-        return dst;
-    };
-
-    ic.rho = lift_3d(rho_3d);
-    ic.u = lift_3d(u_3d);
-    ic.v = lift_3d(v_3d);
-    ic.w = lift_3d(w_3d);
-    ic.p = lift_3d(p_3d);
-
-    if (ic_node["reactant_mass_fraction"]) {
-        const auto lambda_3d = ReadTensorDouble(ic_node["reactant_mass_fraction"]);
-        ic.reactant_mass_fraction = lift_3d(lambda_3d);
-    }
 }
 
 void YamlConfigParser::ValidateStructuredShape(const YAML::Node& ic_node, const int dim) {
@@ -867,19 +744,19 @@ void YamlConfigParser::ValidateStructuredShape(const YAML::Node& ic_node, const 
         throw std::runtime_error("Missing 'interfaces' in structured initial condition");
     }
 
-    if (!ic_node["rho"] || !ic_node["u"] || !ic_node["v"] || !ic_node["w"] || !ic_node["p"]) {
-        throw std::runtime_error("structured initial condition requires rho/u/v/w/p");
+    if (!ic_node["rho"] || !ic_node["u"] || !ic_node["v"] || !ic_node["p"]) {
+        throw std::runtime_error("structured initial condition requires rho/u/v/p");
     }
 
     if (dim < 1 || dim > 3) {
-        throw std::runtime_error("Only dim=1,2,3 are supported");
+        throw std::runtime_error("Only dim=1,2 are supported");
     }
 }
 
 void YamlConfigParser::ValidateSettingsConsistency(const Settings& settings) {
     const int dim = settings.mesh.dim;
-    if (dim < 1 || dim > 3) {
-        throw std::runtime_error("mesh.dim must be 1, 2, or 3");
+    if (dim < 1 || dim > 2) {
+        throw std::runtime_error("mesh.dim must be 1 or 2");
     }
 
     if (settings.mesh.source_type == MeshSourceType::StructuredCartesian) {
@@ -893,20 +770,14 @@ void YamlConfigParser::ValidateSettingsConsistency(const Settings& settings) {
             throw std::runtime_error("structured mesh nx must be positive");
         }
         if (dim >= 2 && s.ny <= 0) {
-            throw std::runtime_error("structured mesh ny must be positive for dim >= 2");
-        }
-        if (dim >= 3 && s.nz <= 0) {
-            throw std::runtime_error("structured mesh nz must be positive for dim >= 3");
+            throw std::runtime_error("structured mesh ny must be positive for dim = 2");
         }
 
         if (!(s.x_max > s.x_min)) {
             throw std::runtime_error("structured mesh requires x_max > x_min");
         }
         if (dim >= 2 && !(s.y_max > s.y_min)) {
-            throw std::runtime_error("structured mesh requires y_max > y_min for dim >= 2");
-        }
-        if (dim >= 3 && !(s.z_max > s.z_min)) {
-            throw std::runtime_error("structured mesh requires z_max > z_min for dim >= 3");
+            throw std::runtime_error("structured mesh requires y_max > y_min for dim = 2");
         }
     }
 
@@ -936,28 +807,6 @@ void YamlConfigParser::ValidateSettingsConsistency(const Settings& settings) {
     }
 }
 
-std::vector<ImmersedObjectSettings> YamlConfigParser::ParseImmersedObjects(const YAML::Node& node) {
-    std::vector<ImmersedObjectSettings> objects;
-
-    if (!node.IsSequence()) {
-        throw std::runtime_error("'immersed_boundaries.objects' must be a sequence");
-    }
-
-    for (const auto& item : node) {
-        ImmersedObjectSettings object;
-        AssignIfPresent(item, "type", object.type);
-        AssignIfPresent(item, "cx", object.cx);
-        AssignIfPresent(item, "cy", object.cy);
-        AssignIfPresent(item, "cz", object.cz);
-        AssignIfPresent(item, "radius", object.radius);
-        AssignIfPresent(item, "size_x", object.size_x);
-        AssignIfPresent(item, "size_y", object.size_y);
-        AssignIfPresent(item, "size_z", object.size_z);
-        objects.push_back(object);
-    }
-
-    return objects;
-}
 
 std::vector<double> YamlConfigParser::ReadVectorDouble(const YAML::Node& node) {
     if (!node.IsSequence()) {
@@ -991,7 +840,7 @@ std::vector<std::vector<double>> YamlConfigParser::ReadMatrixDouble(const YAML::
 
 std::vector<std::vector<std::vector<double>>> YamlConfigParser::ReadTensorDouble(const YAML::Node& node) {
     if (!node.IsSequence()) {
-        throw std::runtime_error("Expected 3D sequence");
+        throw std::runtime_error("Expected 2D sequence");
     }
 
     std::vector<std::vector<std::vector<double>>> values;

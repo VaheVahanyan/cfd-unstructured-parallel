@@ -52,7 +52,6 @@ struct Face final {
     /** @brief Face center coordinates. */
     double center_x = 0.0;
     double center_y = 0.0;
-    double center_z = 0.0;
 
     /**
      * @brief Face measure.
@@ -66,7 +65,6 @@ struct Face final {
      */
     double normal_x = 0.0;
     double normal_y = 0.0;
-    double normal_z = 0.0;
 
     /**
      * @brief Boundary tag for physical boundary faces.

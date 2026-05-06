@@ -75,7 +75,6 @@ struct BoundaryStateSettings {
     double rho = 0.0;
     double u = 0.0;
     double v = 0.0;
-    double w = 0.0;
     double p = 0.0;
 };
 
@@ -94,22 +93,6 @@ struct BoundarySettings {
     std::map<int, BoundaryConditionSettings> by_tag;
 };
 
-/**
- * @brief Immersed object settings reserved for future use.
- */
-struct ImmersedObjectSettings {
-    std::string type;
-
-    double cx = 0.0;
-    double cy = 0.0;
-    double cz = 0.0;
-
-    double radius = 0.0;
-
-    double size_x = 0.0;
-    double size_y = 0.0;
-    double size_z = 0.0;
-};
 
 /**
  * @brief Optional per-case overrides applied over global settings.
@@ -157,8 +140,6 @@ struct CaseSettings {
     // Misc
     std::optional<bool> analytical;
     std::optional<bool> mpi_enabled;
-    std::optional<bool> immersed_enabled;
-    std::optional<std::vector<ImmersedObjectSettings>> immersed_objects;
 };
 
 /**
@@ -211,8 +192,6 @@ struct Settings {
 
     // ==================== Parallel / immersed ====================
     bool mpi_enabled = false;
-    bool immersed_enabled = false;
-    std::vector<ImmersedObjectSettings> immersed_objects;
 
     [[nodiscard]] bool HasOutputFormat(const std::string& format) const {
         for (const std::string& fmt : output_formats) {
@@ -272,8 +251,6 @@ inline Settings MergeSettings(const Settings& global,
 
     APPLY_OVERRIDE(analytical)
     APPLY_OVERRIDE(mpi_enabled)
-    APPLY_OVERRIDE(immersed_enabled)
-    APPLY_OVERRIDE(immersed_objects)
 
 #undef APPLY_OVERRIDE
 

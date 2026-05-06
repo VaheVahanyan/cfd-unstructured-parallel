@@ -14,7 +14,6 @@ PrimitiveCell P0Reconstruction::LoadCellPrimitive(const Workspace& workspace,
     state.rho = W(cell_id, Workspace::k_rho);
     state.u = W(cell_id, Workspace::k_u);
     state.v = W(cell_id, Workspace::k_v);
-    state.w = W(cell_id, Workspace::k_w);
     state.P = W(cell_id, Workspace::k_p);
 
     return state;
@@ -50,4 +49,10 @@ void P0Reconstruction::ReconstructBoundaryFaceInterior(const Mesh& mesh,
     }
 
     interior_state = LoadCellPrimitive(workspace, face.owner_cell_id);
+}
+
+
+void P0Reconstruction::ComputeGradients(const Mesh& mesh, Workspace& workspace) const {
+    (void)mesh;
+    workspace.ZeroGradients();
 }

@@ -140,8 +140,8 @@ void Mesh::Validate() const {
 }
 
 void Mesh::ValidateDimension() const {
-    if (dim_ < 1 || dim_ > 3) {
-        throw std::runtime_error("Mesh::Validate: dim must be 1..3");
+    if (dim_ < 1 || dim_ > 2) {
+        throw std::runtime_error("Mesh::Validate: dim must be 1..2");
     }
 }
 
@@ -273,8 +273,7 @@ void Mesh::ValidateGeometry() const {
 
         const double normal_norm =
             std::sqrt(face.normal_x * face.normal_x +
-                      face.normal_y * face.normal_y +
-                      face.normal_z * face.normal_z);
+                      face.normal_y * face.normal_y);
 
         if (std::abs(normal_norm - 1.0) > 1e-10) {
             throw std::runtime_error("Mesh::Validate: face normal must be unit-length");
@@ -288,8 +287,7 @@ void Mesh::ValidateGeometry() const {
 
         const bool center_is_finite =
             std::isfinite(cell.center_x) &&
-            std::isfinite(cell.center_y) &&
-            std::isfinite(cell.center_z);
+            std::isfinite(cell.center_y);
 
         if (!center_is_finite) {
             throw std::runtime_error("Mesh::Validate: cell center contains non-finite value");
@@ -305,10 +303,6 @@ void Mesh::ValidateGeometry() const {
             if (dim_ == 2 && cell.face_ids.size() < 3) {
                 throw std::runtime_error("Mesh::Validate: 2D owned cell must have at least 3 faces");
             }
-
-            if (dim_ == 3 && cell.face_ids.size() < 4) {
-                throw std::runtime_error("Mesh::Validate: 3D owned cell must have at least 4 faces");
-            }
         }
         else {
             if (cell.face_ids.empty()) {
@@ -320,8 +314,7 @@ void Mesh::ValidateGeometry() const {
     for (const Node& node : nodes_) {
         const bool coords_are_finite =
             std::isfinite(node.x) &&
-            std::isfinite(node.y) &&
-            std::isfinite(node.z);
+            std::isfinite(node.y);
 
         if (!coords_are_finite) {
             throw std::runtime_error("Mesh::Validate: node coordinates contain non-finite value");
@@ -331,8 +324,7 @@ void Mesh::ValidateGeometry() const {
     for (const Face& face : faces_) {
         const bool center_is_finite =
             std::isfinite(face.center_x) &&
-            std::isfinite(face.center_y) &&
-            std::isfinite(face.center_z);
+            std::isfinite(face.center_y);
 
         if (!center_is_finite) {
             throw std::runtime_error("Mesh::Validate: face center contains non-finite value");
@@ -340,16 +332,14 @@ void Mesh::ValidateGeometry() const {
 
         const bool normal_is_finite =
             std::isfinite(face.normal_x) &&
-            std::isfinite(face.normal_y) &&
-            std::isfinite(face.normal_z);
+            std::isfinite(face.normal_y);
 
         if (!normal_is_finite) {
             throw std::runtime_error("Mesh::Validate: face normal contains non-finite value");
         }
 
         if (std::abs(face.normal_x) < eps &&
-            std::abs(face.normal_y) < eps &&
-            std::abs(face.normal_z) < eps) {
+            std::abs(face.normal_y) < eps) {
             throw std::runtime_error("Mesh::Validate: face normal must be non-zero");
         }
     }

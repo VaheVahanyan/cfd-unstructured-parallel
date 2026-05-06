@@ -12,11 +12,11 @@
 #include "config/InitialConditionInitializer.hpp"
 #include "data/DataLayer.hpp"
 #include "data/Workspace.hpp"
-#include "geometry/DelaunayMeshBuilder.hpp"
+// #include "geometry/DelaunayMeshBuilder.hpp"
 #include "geometry/Face.hpp"
 #include "geometry/GmshMeshBuilder.hpp"
 #include "geometry/Mesh.hpp"
-#include "geometry/StructuredMeshBuilder.hpp"
+// #include "geometry/StructuredMeshBuilder.hpp"
 #include "output/StepWriter.hpp"
 #include "output/WriterFactory.hpp"
 #include "parallel/DomainDecomposition.hpp"
@@ -175,28 +175,6 @@ void Simulation::ValidateConfiguration() const {
             "Simulation: godunov-kolgan-rodionov requires at least p1"
         );
     }
-
-    if (solver == "mader" && time_integrator != "mader") {
-        throw std::runtime_error(
-            "Simulation: mader solver requires mader time_integrator"
-        );
-    }
-
-    if (solver == "mader") {
-        const bool has_lambda_structured =
-            initial_conditions_.structured_regions.has_value() &&
-            initial_conditions_.structured_regions->reactant_mass_fraction.has_value();
-
-        const bool has_lambda_constant =
-            initial_conditions_.constant.has_value() &&
-            initial_conditions_.constant->reactant_mass_fraction.has_value();
-
-        if (!has_lambda_structured && !has_lambda_constant) {
-            throw std::runtime_error(
-                "Simulation: mader solver requires reactant_mass_fraction in initial condition"
-            );
-        }
-    }
 }
 
 void Simulation::ValidateBoundaryCoverage() const {
@@ -290,38 +268,38 @@ void Simulation::InitializeWriter() {
 }
 
 std::shared_ptr<Mesh> Simulation::CreateMesh() const {
-    if (settings_.mesh.source_type == MeshSourceType::StructuredCartesian) {
-        if (!settings_.mesh.structured.has_value()) {
-            throw std::runtime_error("Simulation: structured mesh settings are missing");
-        }
-
-        const StructuredMeshSettings& s = *settings_.mesh.structured;
-
-        if (settings_.mesh.dim == 2) {
-            return std::make_shared<Mesh>(
-                StructuredMeshBuilder::BuildUniformCartesian2D(
-                    s.nx, s.ny,
-                    s.x_min, s.x_max,
-                    s.y_min, s.y_max
-                )
-            );
-        }
-
-        if (settings_.mesh.dim == 3) {
-            return std::make_shared<Mesh>(
-                StructuredMeshBuilder::BuildUniformCartesian3D(
-                    s.nx, s.ny, s.nz,
-                    s.x_min, s.x_max,
-                    s.y_min, s.y_max,
-                    s.z_min, s.z_max
-                )
-            );
-        }
-
-        throw std::runtime_error(
-            "Simulation: only dim=2 and dim=3 are currently supported by StructuredMeshBuilder"
-        );
-    }
+    // if (settings_.mesh.source_type == MeshSourceType::StructuredCartesian) {
+    //     if (!settings_.mesh.structured.has_value()) {
+    //         throw std::runtime_error("Simulation: structured mesh settings are missing");
+    //     }
+    //
+    //     const StructuredMeshSettings& s = *settings_.mesh.structured;
+    //
+    //     if (settings_.mesh.dim == 2) {
+    //         return std::make_shared<Mesh>(
+    //             StructuredMeshBuilder::BuildUniformCartesian2D(
+    //                 s.nx, s.ny,
+    //                 s.x_min, s.x_max,
+    //                 s.y_min, s.y_max
+    //             )
+    //         );
+    //     }
+    //
+    //     if (settings_.mesh.dim == 3) {
+    //         return std::make_shared<Mesh>(
+    //             StructuredMeshBuilder::BuildUniformCartesian3D(
+    //                 s.nx, s.ny, s.nz,
+    //                 s.x_min, s.x_max,
+    //                 s.y_min, s.y_max,
+    //                 s.z_min, s.z_max
+    //             )
+    //         );
+    //     }
+    //
+    //     throw std::runtime_error(
+    //         "Simulation: only dim=2 and dim=3 are currently supported by StructuredMeshBuilder"
+    //     );
+    // }
 
     if (settings_.mesh.source_type == MeshSourceType::GmshFile) {
         if (!settings_.mesh.gmsh_file.has_value()) {
@@ -349,18 +327,18 @@ std::shared_ptr<Mesh> Simulation::CreateMesh() const {
         );
     }
 
-    if (settings_.mesh.source_type == MeshSourceType::DelaunayGeo) {
-        if (!settings_.mesh.delaunay_geo.has_value()) {
-            throw std::runtime_error("Simulation: delaunay geo settings are missing");
-        }
-
-        return std::make_shared<Mesh>(
-            DelaunayMeshBuilder::BuildFromGeoFile(
-                settings_.mesh.delaunay_geo->file_path,
-                settings_.mesh.dim
-            )
-        );
-    }
+    // if (settings_.mesh.source_type == MeshSourceType::DelaunayGeo) {
+    //     if (!settings_.mesh.delaunay_geo.has_value()) {
+    //         throw std::runtime_error("Simulation: delaunay geo settings are missing");
+    //     }
+    //
+    //     return std::make_shared<Mesh>(
+    //         DelaunayMeshBuilder::BuildFromGeoFile(
+    //             settings_.mesh.delaunay_geo->file_path,
+    //             settings_.mesh.dim
+    //         )
+    //     );
+    // }
 
     throw std::runtime_error("Simulation: unsupported mesh source type");
 }
@@ -373,26 +351,20 @@ bool Simulation::IsKnownSolver(const std::string& solver) const {
     const std::string s = utils::ToLower(solver);
     return s == "godunov" ||
         s == "godunov-kolgan" ||
-        s == "godunov-kolgan-rodionov" ||
-        s == "flic" ||
-        s == "mader";
+        s == "godunov-kolgan-rodionov";
 }
 
 bool Simulation::IsKnownTimeIntegrator(const std::string& time_integrator) const {
     const std::string t = utils::ToLower(time_integrator);
     return t == "euler" ||
         t == "ssprk2" ||
-        t == "ssprk3" ||
-        t == "maccormack" ||
-        t == "mader";
+        t == "ssprk3";
 }
 
 bool Simulation::IsKnownReconstruction(const std::string& reconstruction) const {
     const std::string r = utils::ToLower(reconstruction);
     return r == "p0" ||
-        r == "p1" ||
-        r == "eno3" ||
-        r == "weno5";
+        r == "p1";
 }
 
 bool Simulation::IsKnownRiemannSolver(const std::string& riemann_solver) const {
@@ -400,10 +372,8 @@ bool Simulation::IsKnownRiemannSolver(const std::string& riemann_solver) const {
     return r == "exact" ||
         r == "hll" ||
         r == "hllc" ||
-        r == "acoustic" ||
         r == "roe" ||
-        r == "rusanov" ||
-        r == "osher";
+        r == "rusanov";
 }
 
 bool Simulation::IsKnownOutputFormat(const std::string& format) const {

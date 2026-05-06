@@ -24,18 +24,15 @@ private:
                        const FaceNormal& normal,
                        double& normal_velocity,
                        double& tangential_x,
-                       double& tangential_y,
-                       double& tangential_z) const;
+                       double& tangential_y) const;
 
     void BuildStarMomentum(double rho_star,
                            double star_normal_velocity,
                            double tangential_x,
                            double tangential_y,
-                           double tangential_z,
                            const FaceNormal& normal,
                            double& rhoU_star,
-                           double& rhoV_star,
-                           double& rhoW_star) const;
+                           double& rhoV_star) const;
 };
 
 #endif  // HLLCRIEMANNSOLVER_HPP

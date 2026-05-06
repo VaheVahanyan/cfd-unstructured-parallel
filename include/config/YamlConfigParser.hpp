@@ -44,7 +44,6 @@ private:
     static void ParseLogging(const YAML::Node& node, Settings& settings);
     static void ParseOutput(const YAML::Node& node, Settings& settings);
     static void ParseParallel(const YAML::Node& node, Settings& settings);
-    static void ParseImmersedBoundaries(const YAML::Node& node, Settings& settings);
 
     static void ApplyCaseOverrides(const YAML::Node& case_node,
                                InitialConditions& ic,
@@ -64,12 +63,10 @@ private:
 
     static void ParseStructured1D(const YAML::Node& ic_node, StructuredRegionInitialCondition& ic);
     static void ParseStructured2D(const YAML::Node& ic_node, StructuredRegionInitialCondition& ic);
-    static void ParseStructured3D(const YAML::Node& ic_node, StructuredRegionInitialCondition& ic);
 
     static void ValidateStructuredShape(const YAML::Node& ic_node, int dim);
     static void ValidateSettingsConsistency(const Settings& settings);
 
-    [[nodiscard]] static std::vector<ImmersedObjectSettings> ParseImmersedObjects(const YAML::Node& node);
     [[nodiscard]] static std::vector<double> ReadVectorDouble(const YAML::Node& node);
     [[nodiscard]] static std::vector<std::vector<double>> ReadMatrixDouble(const YAML::Node& node);
     [[nodiscard]] static std::vector<std::vector<std::vector<double>>> ReadTensorDouble(const YAML::Node& node);

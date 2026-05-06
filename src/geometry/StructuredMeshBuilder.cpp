@@ -138,7 +138,6 @@ Mesh StructuredMeshBuilder::BuildUniformCartesian2D(const int nx, const int ny,
             };
             face.center_x = x_min + static_cast<double>(i) * dx;
             face.center_y = yc;
-            face.center_z = 0.0;
             face.measure = dy;
             face.remote_rank = -1;
             face.remote_cell_id = Face::k_invalid_cell_id;
@@ -149,7 +148,6 @@ Mesh StructuredMeshBuilder::BuildUniformCartesian2D(const int nx, const int ny,
                 face.kind = FaceKind::PhysicalBoundary;
                 face.normal_x = -1.0;
                 face.normal_y = 0.0;
-                face.normal_z = 0.0;
                 face.boundary_tag = k_xmin_tag;
             }
             else if (i == nx) {
@@ -158,7 +156,6 @@ Mesh StructuredMeshBuilder::BuildUniformCartesian2D(const int nx, const int ny,
                 face.kind = FaceKind::PhysicalBoundary;
                 face.normal_x = 1.0;
                 face.normal_y = 0.0;
-                face.normal_z = 0.0;
                 face.boundary_tag = k_xmax_tag;
             }
             else {
@@ -167,7 +164,6 @@ Mesh StructuredMeshBuilder::BuildUniformCartesian2D(const int nx, const int ny,
                 face.kind = FaceKind::Interior;
                 face.normal_x = 1.0;
                 face.normal_y = 0.0;
-                face.normal_z = 0.0;
                 face.boundary_tag = -1;
             }
 
@@ -191,7 +187,6 @@ Mesh StructuredMeshBuilder::BuildUniformCartesian2D(const int nx, const int ny,
             };
             face.center_x = x_min + (static_cast<double>(i) + 0.5) * dx;
             face.center_y = y;
-            face.center_z = 0.0;
             face.measure = dx;
             face.remote_rank = -1;
             face.remote_cell_id = Face::k_invalid_cell_id;
@@ -202,7 +197,6 @@ Mesh StructuredMeshBuilder::BuildUniformCartesian2D(const int nx, const int ny,
                 face.kind = FaceKind::PhysicalBoundary;
                 face.normal_x = 0.0;
                 face.normal_y = -1.0;
-                face.normal_z = 0.0;
                 face.boundary_tag = k_ymin_tag;
             }
             else if (j == ny) {
@@ -211,7 +205,6 @@ Mesh StructuredMeshBuilder::BuildUniformCartesian2D(const int nx, const int ny,
                 face.kind = FaceKind::PhysicalBoundary;
                 face.normal_x = 0.0;
                 face.normal_y = 1.0;
-                face.normal_z = 0.0;
                 face.boundary_tag = k_ymax_tag;
             }
             else {
@@ -220,7 +213,6 @@ Mesh StructuredMeshBuilder::BuildUniformCartesian2D(const int nx, const int ny,
                 face.kind = FaceKind::Interior;
                 face.normal_x = 0.0;
                 face.normal_y = 1.0;
-                face.normal_z = 0.0;
                 face.boundary_tag = -1;
             }
 
@@ -332,7 +324,6 @@ Mesh StructuredMeshBuilder::BuildUniformCartesian3D(const int nx, const int ny, 
                 };
                 face.center_x = x_min + static_cast<double>(i) * dx;
                 face.center_y = yc;
-                face.center_z = zc;
                 face.measure = yz_area;
                 face.remote_rank = -1;
                 face.remote_cell_id = Face::k_invalid_cell_id;
@@ -343,7 +334,6 @@ Mesh StructuredMeshBuilder::BuildUniformCartesian3D(const int nx, const int ny, 
                     face.kind = FaceKind::PhysicalBoundary;
                     face.normal_x = -1.0;
                     face.normal_y = 0.0;
-                    face.normal_z = 0.0;
                     face.boundary_tag = k_xmin_tag;
                 }
                 else if (i == nx) {
@@ -352,7 +342,6 @@ Mesh StructuredMeshBuilder::BuildUniformCartesian3D(const int nx, const int ny, 
                     face.kind = FaceKind::PhysicalBoundary;
                     face.normal_x = 1.0;
                     face.normal_y = 0.0;
-                    face.normal_z = 0.0;
                     face.boundary_tag = k_xmax_tag;
                 }
                 else {
@@ -361,7 +350,6 @@ Mesh StructuredMeshBuilder::BuildUniformCartesian3D(const int nx, const int ny, 
                     face.kind = FaceKind::Interior;
                     face.normal_x = 1.0;
                     face.normal_y = 0.0;
-                    face.normal_z = 0.0;
                     face.boundary_tag = -1;
                 }
 
@@ -390,7 +378,6 @@ Mesh StructuredMeshBuilder::BuildUniformCartesian3D(const int nx, const int ny, 
                 };
                 face.center_x = x_min + (static_cast<double>(i) + 0.5) * dx;
                 face.center_y = y;
-                face.center_z = zc;
                 face.measure = xz_area;
                 face.remote_rank = -1;
                 face.remote_cell_id = Face::k_invalid_cell_id;
@@ -401,7 +388,6 @@ Mesh StructuredMeshBuilder::BuildUniformCartesian3D(const int nx, const int ny, 
                     face.kind = FaceKind::PhysicalBoundary;
                     face.normal_x = 0.0;
                     face.normal_y = -1.0;
-                    face.normal_z = 0.0;
                     face.boundary_tag = k_ymin_tag;
                 }
                 else if (j == ny) {
@@ -410,7 +396,6 @@ Mesh StructuredMeshBuilder::BuildUniformCartesian3D(const int nx, const int ny, 
                     face.kind = FaceKind::PhysicalBoundary;
                     face.normal_x = 0.0;
                     face.normal_y = 1.0;
-                    face.normal_z = 0.0;
                     face.boundary_tag = k_ymax_tag;
                 }
                 else {
@@ -419,7 +404,6 @@ Mesh StructuredMeshBuilder::BuildUniformCartesian3D(const int nx, const int ny, 
                     face.kind = FaceKind::Interior;
                     face.normal_x = 0.0;
                     face.normal_y = 1.0;
-                    face.normal_z = 0.0;
                     face.boundary_tag = -1;
                 }
 
@@ -448,7 +432,6 @@ Mesh StructuredMeshBuilder::BuildUniformCartesian3D(const int nx, const int ny, 
                 };
                 face.center_x = x_min + (static_cast<double>(i) + 0.5) * dx;
                 face.center_y = yc;
-                face.center_z = z;
                 face.measure = xy_area;
                 face.remote_rank = -1;
                 face.remote_cell_id = Face::k_invalid_cell_id;
@@ -459,7 +442,6 @@ Mesh StructuredMeshBuilder::BuildUniformCartesian3D(const int nx, const int ny, 
                     face.kind = FaceKind::PhysicalBoundary;
                     face.normal_x = 0.0;
                     face.normal_y = 0.0;
-                    face.normal_z = -1.0;
                     face.boundary_tag = k_zmin_tag;
                 }
                 else if (k == nz) {
@@ -468,7 +450,6 @@ Mesh StructuredMeshBuilder::BuildUniformCartesian3D(const int nx, const int ny, 
                     face.kind = FaceKind::PhysicalBoundary;
                     face.normal_x = 0.0;
                     face.normal_y = 0.0;
-                    face.normal_z = 1.0;
                     face.boundary_tag = k_zmax_tag;
                 }
                 else {
@@ -477,7 +458,6 @@ Mesh StructuredMeshBuilder::BuildUniformCartesian3D(const int nx, const int ny, 
                     face.kind = FaceKind::Interior;
                     face.normal_x = 0.0;
                     face.normal_y = 0.0;
-                    face.normal_z = 1.0;
                     face.boundary_tag = -1;
                 }
 

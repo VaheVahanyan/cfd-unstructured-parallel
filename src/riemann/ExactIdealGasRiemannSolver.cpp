@@ -28,7 +28,6 @@ void ExactIdealGasRiemannSolver::BuildTangentialBasis(const FaceNormal& normal,
                                                       double& t2_z) const {
     double ref_x = 0.0;
     double ref_y = 0.0;
-    double ref_z = 0.0;
 
     if (std::abs(normal.x) < 0.9) {
         ref_x = 1.0;
@@ -37,11 +36,10 @@ void ExactIdealGasRiemannSolver::BuildTangentialBasis(const FaceNormal& normal,
         ref_y = 1.0;
     }
 
-    const double dot = ref_x * normal.x + ref_y * normal.y + ref_z * normal.z;
+    const double dot = ref_x * normal.x + ref_y * normal.y;
 
     t1_x = ref_x - dot * normal.x;
     t1_y = ref_y - dot * normal.y;
-    t1_z = ref_z - dot * normal.z;
 
     const double t1_norm = std::sqrt(t1_x * t1_x + t1_y * t1_y + t1_z * t1_z);
     if (t1_norm <= 1e-14) {
@@ -74,16 +72,14 @@ void ExactIdealGasRiemannSolver::ProjectVelocityToLocalBasis(const PrimitiveCell
                                                              const FaceNormal& normal,
                                                              const double t1_x,
                                                              const double t1_y,
-                                                             const double t1_z,
                                                              const double t2_x,
                                                              const double t2_y,
-                                                             const double t2_z,
                                                              double& u_n,
                                                              double& u_t1,
                                                              double& u_t2) const {
-    u_n = state.u * normal.x + state.v * normal.y + state.w * normal.z;
-    u_t1 = state.u * t1_x + state.v * t1_y + state.w * t1_z;
-    u_t2 = state.u * t2_x + state.v * t2_y + state.w * t2_z;
+    u_n = state.u * normal.x + state.v * normal.y;
+    u_t1 = state.u * t1_x + state.v * t1_y;
+    u_t2 = state.u * t2_x + state.v * t2_y;
 }
 
 void ExactIdealGasRiemannSolver::ComposeVelocityFromLocalBasis(const double u_n,
@@ -92,16 +88,12 @@ void ExactIdealGasRiemannSolver::ComposeVelocityFromLocalBasis(const double u_n,
                                                                const FaceNormal& normal,
                                                                const double t1_x,
                                                                const double t1_y,
-                                                               const double t1_z,
                                                                const double t2_x,
                                                                const double t2_y,
-                                                               const double t2_z,
                                                                double& u,
-                                                               double& v,
-                                                               double& w) const {
+                                                               double& v) const {
     u = u_n * normal.x + u_t1 * t1_x + u_t2 * t2_x;
     v = u_n * normal.y + u_t1 * t1_y + u_t2 * t2_y;
-    w = u_n * normal.z + u_t1 * t1_z + u_t2 * t2_z;
 }
 
 ExactIdealGasRiemannSolver::State1D ExactIdealGasRiemannSolver::MakeState1D(

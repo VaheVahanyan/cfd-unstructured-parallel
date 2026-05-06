@@ -14,13 +14,13 @@
 #include "geometry/Mesh.hpp"
 #include "parallel/StateSynchronizer.hpp"
 #include "reconstruction/P0Reconstruction.hpp"
-#include "reconstruction/P1Reconstruction.hpp"
+// #include "reconstruction/P1Reconstruction.hpp"
 #include "reconstruction/Reconstruction.hpp"
-#include "riemann/ExactIdealGasRiemannSolver.hpp"
+// #include "riemann/ExactIdealGasRiemannSolver.hpp"
 #include "riemann/HLLCRiemannSolver.hpp"
 #include "riemann/HLLRiemannSolver.hpp"
 #include "riemann/RiemannSolver.hpp"
-#include "riemann/RoeRiemannSolver.hpp"
+// #include "riemann/RoeRiemannSolver.hpp"
 #include "riemann/RusanovRiemannSolver.hpp"
 
 GodunovKolganRodionovSpatialOperator::GodunovKolganRodionovSpatialOperator(
@@ -54,10 +54,10 @@ void GodunovKolganRodionovSpatialOperator::InitializeReconstruction(const Settin
         c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
     }
 
-    if (name == "p1") {
-        reconstruction_ = std::make_shared<P1Reconstruction>();
-        return;
-    }
+    // if (name == "p1") {
+    //     reconstruction_ = std::make_shared<P1Reconstruction>();
+    //     return;
+    // }
 
     if (name == "p0") {
         reconstruction_ = std::make_shared<P0Reconstruction>();
@@ -91,15 +91,15 @@ void GodunovKolganRodionovSpatialOperator::InitializeRiemannSolver(const Setting
         return;
     }
 
-    if (name == "roe") {
-        riemann_solver_ = std::make_shared<RoeRiemannSolver>();
-        return;
-    }
-
-    if (name == "exact") {
-        riemann_solver_ = std::make_shared<ExactIdealGasRiemannSolver>(0.0, settings.Q_user);
-        return;
-    }
+    // if (name == "roe") {
+    //     riemann_solver_ = std::make_shared<RoeRiemannSolver>();
+    //     return;
+    // }
+    //
+    // if (name == "exact") {
+    //     riemann_solver_ = std::make_shared<ExactIdealGasRiemannSolver>(0.0, settings.Q_user);
+    //     return;
+    // }
 
     throw std::runtime_error(
         "GodunovKolganRodionovSpatialOperator::InitializeRiemannSolver: unsupported riemann solver '" +
@@ -118,7 +118,6 @@ void GodunovKolganRodionovSpatialOperator::FillPrimitiveCacheFromConservative(co
         U_cell.rho = U(cell_id, DataLayer::k_rho);
         U_cell.rhoU = U(cell_id, DataLayer::k_rhoU);
         U_cell.rhoV = U(cell_id, DataLayer::k_rhoV);
-        U_cell.rhoW = U(cell_id, DataLayer::k_rhoW);
         U_cell.E = U(cell_id, DataLayer::k_E);
 
         const PrimitiveCell w = PrimitiveFromConservativeCell(U_cell, gamma);
@@ -126,7 +125,6 @@ void GodunovKolganRodionovSpatialOperator::FillPrimitiveCacheFromConservative(co
         W(cell_id, Workspace::k_rho) = w.rho;
         W(cell_id, Workspace::k_u) = w.u;
         W(cell_id, Workspace::k_v) = w.v;
-        W(cell_id, Workspace::k_w) = w.w;
         W(cell_id, Workspace::k_p) = w.P;
     }
 }
@@ -139,7 +137,6 @@ PrimitiveCell GodunovKolganRodionovSpatialOperator::LoadCellPrimitive(const Work
     state.rho = W(cell_id, Workspace::k_rho);
     state.u = W(cell_id, Workspace::k_u);
     state.v = W(cell_id, Workspace::k_v);
-    state.w = W(cell_id, Workspace::k_w);
     state.P = W(cell_id, Workspace::k_p);
 
     return state;
@@ -149,7 +146,6 @@ FaceNormal GodunovKolganRodionovSpatialOperator::BuildFaceNormal(const Face& fac
     FaceNormal normal;
     normal.x = face.normal_x;
     normal.y = face.normal_y;
-    normal.z = face.normal_z;
     return normal;
 }
 
@@ -165,7 +161,6 @@ void GodunovKolganRodionovSpatialOperator::AccumulateFluxToOwner(const Mesh& mes
     rhs(face.owner_cell_id, DataLayer::k_rho) -= flux.rho * scale;
     rhs(face.owner_cell_id, DataLayer::k_rhoU) -= flux.rhoU * scale;
     rhs(face.owner_cell_id, DataLayer::k_rhoV) -= flux.rhoV * scale;
-    rhs(face.owner_cell_id, DataLayer::k_rhoW) -= flux.rhoW * scale;
     rhs(face.owner_cell_id, DataLayer::k_E) -= flux.E * scale;
 }
 
@@ -181,7 +176,6 @@ void GodunovKolganRodionovSpatialOperator::AccumulateFluxToNeighbor(const Mesh& 
     rhs(face.neighbor_cell_id, DataLayer::k_rho) += flux.rho * scale;
     rhs(face.neighbor_cell_id, DataLayer::k_rhoU) += flux.rhoU * scale;
     rhs(face.neighbor_cell_id, DataLayer::k_rhoV) += flux.rhoV * scale;
-    rhs(face.neighbor_cell_id, DataLayer::k_rhoW) += flux.rhoW * scale;
     rhs(face.neighbor_cell_id, DataLayer::k_E) += flux.E * scale;
 }
 
@@ -332,7 +326,6 @@ void GodunovKolganRodionovSpatialOperator::ComputeRHS(const DataLayer& layer,
     half_layer.Resize(mesh.GetCellCount());
 
     half_layer.U() = layer.U();
-    half_layer.ReactantMassFraction() = layer.ReactantMassFraction();
 
     for (std::size_t cell_id = 0; cell_id < mesh.GetOwnedCellCount(); ++cell_id) {
         for (std::size_t var = 0; var < DataLayer::k_nvar; ++var) {

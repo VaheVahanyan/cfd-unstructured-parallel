@@ -30,6 +30,8 @@ public:
                                          const Face& face,
                                          PrimitiveCell& interior_state) const override;
 
+    void ComputeGradients(const Mesh& mesh, Workspace& workspace) const override;
+
 private:
     [[nodiscard]] PrimitiveCell LoadCellPrimitive(const Workspace& workspace,
                                                   std::size_t cell_id) const;

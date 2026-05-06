@@ -58,7 +58,6 @@ void MeshSerialization::PackNode(std::vector<char>& buffer, const Node& node) {
     PackPod(buffer, node.id);
     PackPod(buffer, node.x);
     PackPod(buffer, node.y);
-    PackPod(buffer, node.z);
 }
 
 Node MeshSerialization::UnpackNode(const std::vector<char>& buffer, std::size_t& offset) {
@@ -66,7 +65,6 @@ Node MeshSerialization::UnpackNode(const std::vector<char>& buffer, std::size_t&
     node.id = UnpackPod<std::size_t>(buffer, offset);
     node.x = UnpackPod<double>(buffer, offset);
     node.y = UnpackPod<double>(buffer, offset);
-    node.z = UnpackPod<double>(buffer, offset);
     return node;
 }
 
@@ -80,11 +78,9 @@ void MeshSerialization::PackFace(std::vector<char>& buffer, const Face& face) {
     PackPod(buffer, face.remote_cell_id);
     PackPod(buffer, face.center_x);
     PackPod(buffer, face.center_y);
-    PackPod(buffer, face.center_z);
     PackPod(buffer, face.measure);
     PackPod(buffer, face.normal_x);
     PackPod(buffer, face.normal_y);
-    PackPod(buffer, face.normal_z);
     PackPod(buffer, face.boundary_tag);
 }
 
@@ -99,11 +95,9 @@ Face MeshSerialization::UnpackFace(const std::vector<char>& buffer, std::size_t&
     face.remote_cell_id = UnpackPod<std::size_t>(buffer, offset);
     face.center_x = UnpackPod<double>(buffer, offset);
     face.center_y = UnpackPod<double>(buffer, offset);
-    face.center_z = UnpackPod<double>(buffer, offset);
     face.measure = UnpackPod<double>(buffer, offset);
     face.normal_x = UnpackPod<double>(buffer, offset);
     face.normal_y = UnpackPod<double>(buffer, offset);
-    face.normal_z = UnpackPod<double>(buffer, offset);
     face.boundary_tag = UnpackPod<int>(buffer, offset);
     return face;
 }
@@ -115,7 +109,6 @@ void MeshSerialization::PackCell(std::vector<char>& buffer, const Cell& cell) {
     PackSizeTVector(buffer, cell.face_ids);
     PackPod(buffer, cell.center_x);
     PackPod(buffer, cell.center_y);
-    PackPod(buffer, cell.center_z);
     PackPod(buffer, cell.volume);
 }
 
@@ -127,7 +120,6 @@ Cell MeshSerialization::UnpackCell(const std::vector<char>& buffer, std::size_t&
     cell.face_ids = UnpackSizeTVector(buffer, offset);
     cell.center_x = UnpackPod<double>(buffer, offset);
     cell.center_y = UnpackPod<double>(buffer, offset);
-    cell.center_z = UnpackPod<double>(buffer, offset);
     cell.volume = UnpackPod<double>(buffer, offset);
     return cell;
 }

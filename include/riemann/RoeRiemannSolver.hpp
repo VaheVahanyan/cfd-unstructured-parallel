@@ -32,19 +32,15 @@ private:
     void BuildTangentialBasis(const FaceNormal& normal,
                               double& t1_x,
                               double& t1_y,
-                              double& t1_z,
                               double& t2_x,
-                              double& t2_y,
-                              double& t2_z) const;
+                              double& t2_y) const;
 
     void ProjectVelocityToLocalBasis(const PrimitiveCell& state,
                                      const FaceNormal& normal,
                                      double t1_x,
                                      double t1_y,
-                                     double t1_z,
                                      double t2_x,
                                      double t2_y,
-                                     double t2_z,
                                      double& u_n,
                                      double& u_t1,
                                      double& u_t2) const;
@@ -55,13 +51,10 @@ private:
                                      const FaceNormal& normal,
                                      double t1_x,
                                      double t1_y,
-                                     double t1_z,
                                      double t2_x,
                                      double t2_y,
-                                     double t2_z,
                                      double& v_x,
-                                     double& v_y,
-                                     double& v_z) const;
+                                     double& v_y) const;
 };
 
 #endif  // ROERIEMANNSOLVER_HPP

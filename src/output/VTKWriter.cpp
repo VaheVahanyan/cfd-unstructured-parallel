@@ -82,23 +82,6 @@ namespace {
             throw std::runtime_error("VTKWriter: unsupported 2D cell node count");
         }
 
-        if (dim == 3) {
-            if (node_count == 4) {
-                return VTK_TETRA;
-            }
-            if (node_count == 5) {
-                return VTK_PYRAMID;
-            }
-            if (node_count == 6) {
-                return VTK_WEDGE;
-            }
-            if (node_count == 8) {
-                return VTK_HEXAHEDRON;
-            }
-
-            throw std::runtime_error("VTKWriter: unsupported 3D cell node count");
-        }
-
         throw std::runtime_error("VTKWriter: only 2D and 3D meshes are supported");
     }
 
@@ -109,7 +92,6 @@ namespace {
         conservative.rho = U(cell_id, DataLayer::k_rho);
         conservative.rhoU = U(cell_id, DataLayer::k_rhoU);
         conservative.rhoV = U(cell_id, DataLayer::k_rhoV);
-        conservative.rhoW = U(cell_id, DataLayer::k_rhoW);
         conservative.E = U(cell_id, DataLayer::k_E);
 
         return PrimitiveFromConservativeCell(conservative, gamma);
@@ -226,7 +208,7 @@ void VTKWriter::WriteUnstructuredGrid(const DataLayer& layer,
 
     for (std::size_t i = 0; i < used_nodes.size(); ++i) {
         const Node& node = mesh.GetNode(used_nodes[i]);
-        points->SetPoint(static_cast<vtkIdType>(i), node.x, node.y, node.z);
+        points->SetPoint(static_cast<vtkIdType>(i), node.x, node.y, 0);
     }
     grid->SetPoints(points);
 
@@ -255,7 +237,6 @@ void VTKWriter::WriteUnstructuredGrid(const DataLayer& layer,
     vtkSmartPointer<vtkDoubleArray> arr_p = CreateDoubleArray("pressure", n_cells);
     vtkSmartPointer<vtkDoubleArray> arr_e = CreateDoubleArray("conserved_energy", n_cells);
     vtkSmartPointer<vtkDoubleArray> arr_eint = CreateDoubleArray("internal_energy", n_cells);
-    vtkSmartPointer<vtkDoubleArray> arr_lambda = CreateDoubleArray("reactant_mass_fraction", n_cells);
 
     vtkSmartPointer<vtkIntArray> arr_cell_local_id = CreateIntArray("cell_local_id", n_cells);
     vtkSmartPointer<vtkIntArray> arr_cell_original_id = CreateIntArray("cell_original_id", n_cells);
@@ -266,19 +247,17 @@ void VTKWriter::WriteUnstructuredGrid(const DataLayer& layer,
         const double rho = primitive.rho;
         const double u = primitive.u;
         const double v = primitive.v;
-        const double w = primitive.w;
         const double P = primitive.P;
         const double E = U(cell_id, DataLayer::k_E);
-        const double kinetic = 0.5 * rho * (u * u + v * v + w * w);
+        const double kinetic = 0.5 * rho * (u * u + v * v);
         const double eint = rho > 0.0 ? (E - kinetic) / rho : 0.0;
 
         arr_rho->SetValue(cell_id, rho);
-        double velocity[3] = {u, v, w};
+        double velocity[2] = {u, v};
         arr_vel->SetTuple(cell_id, velocity);
         arr_p->SetValue(cell_id, P);
         arr_e->SetValue(cell_id, E);
         arr_eint->SetValue(cell_id, eint);
-        arr_lambda->SetValue(cell_id, layer.ReactantMassFraction()(cell_id));
 
         const Cell& cell = mesh.GetCell(cell_id);
         arr_cell_local_id->SetValue(cell_id, static_cast<int>(cell.local_id));
@@ -290,7 +269,6 @@ void VTKWriter::WriteUnstructuredGrid(const DataLayer& layer,
     grid->GetCellData()->AddArray(arr_p);
     grid->GetCellData()->AddArray(arr_e);
     grid->GetCellData()->AddArray(arr_eint);
-    grid->GetCellData()->AddArray(arr_lambda);
     grid->GetCellData()->AddArray(arr_cell_local_id);
     grid->GetCellData()->AddArray(arr_cell_original_id);
 

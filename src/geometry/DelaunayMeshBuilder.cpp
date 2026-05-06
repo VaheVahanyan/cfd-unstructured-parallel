@@ -560,7 +560,6 @@ Mesh DelaunayMeshBuilder::BuildMeshFromTriangles(
                 face.remote_cell_id = Face::k_invalid_cell_id;
                 face.center_x = 0.5 * (points[na].x + points[nb].x);
                 face.center_y = 0.5 * (points[na].y + points[nb].y);
-                face.center_z = 0.0;
                 face.measure = EdgeLength(points[na], points[nb]);
 
                 faces.push_back(face);
@@ -655,7 +654,6 @@ void DelaunayMeshBuilder::FinalizeFaceNormals(Mesh& mesh) {
 
         face.normal_x = nx / norm;
         face.normal_y = ny / norm;
-        face.normal_z = 0.0;
     }
 }
 

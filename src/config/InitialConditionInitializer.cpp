@@ -52,7 +52,6 @@ void InitialConditionInitializer::ApplyStructuredRegions(const Mesh& mesh, DataL
     ValidateStructuredRegionShape(ic);
 
     auto& U = layer.U();
-    auto& lambda = layer.ReactantMassFraction();
 
     for (std::size_t cell_id = 0; cell_id < mesh.GetCellCount(); ++cell_id) {
         const Cell& cell = mesh.GetCell(cell_id);
@@ -61,16 +60,12 @@ void InitialConditionInitializer::ApplyStructuredRegions(const Mesh& mesh, DataL
         const std::size_t iy = (settings_.mesh.dim >= 2)
                                    ? RegionIndex(cell.center_y, ic.interfaces_y)
                                    : 0;
-        const std::size_t iz = (settings_.mesh.dim >= 3)
-                                   ? RegionIndex(cell.center_z, ic.interfaces_z)
-                                   : 0;
 
         PrimitiveCell primitive;
-        primitive.rho = ic.rho.At(ix, iy, iz);
-        primitive.u = ic.u.At(ix, iy, iz);
-        primitive.v = (settings_.mesh.dim >= 2) ? ic.v.At(ix, iy, iz) : 0.0;
-        primitive.w = (settings_.mesh.dim >= 3) ? ic.w.At(ix, iy, iz) : 0.0;
-        primitive.P = ic.p.At(ix, iy, iz);
+        primitive.rho = ic.rho.At(ix, iy);
+        primitive.u = ic.u.At(ix, iy);
+        primitive.v = (settings_.mesh.dim >= 2) ? ic.v.At(ix, iy) : 0.0;
+        primitive.P = ic.p.At(ix, iy);
 
         const ConservativeCell conservative =
             ConservativeFromPrimitive(primitive, settings_.gamma);
@@ -78,14 +73,7 @@ void InitialConditionInitializer::ApplyStructuredRegions(const Mesh& mesh, DataL
         U(cell_id, DataLayer::k_rho) = conservative.rho;
         U(cell_id, DataLayer::k_rhoU) = conservative.rhoU;
         U(cell_id, DataLayer::k_rhoV) = conservative.rhoV;
-        U(cell_id, DataLayer::k_rhoW) = conservative.rhoW;
         U(cell_id, DataLayer::k_E) = conservative.E;
-
-        if (ic.reactant_mass_fraction.has_value()) {
-            lambda(cell_id) = ic.reactant_mass_fraction->At(ix, iy, iz);
-        } else {
-            lambda(cell_id) = 0.0;
-        }
     }
 }
 
@@ -102,23 +90,18 @@ void InitialConditionInitializer::ApplyConstant(const Mesh& mesh, DataLayer& lay
     primitive.rho = ic.rho;
     primitive.u = ic.u;
     primitive.v = (settings_.mesh.dim >= 2) ? ic.v : 0.0;
-    primitive.w = (settings_.mesh.dim >= 3) ? ic.w : 0.0;
     primitive.P = ic.p;
 
     const ConservativeCell conservative =
         ConservativeFromPrimitive(primitive, settings_.gamma);
 
     auto& U = layer.U();
-    auto& lambda = layer.ReactantMassFraction();
 
     for (std::size_t cell_id = 0; cell_id < layer.GetCellCount(); ++cell_id) {
         U(cell_id, DataLayer::k_rho) = conservative.rho;
         U(cell_id, DataLayer::k_rhoU) = conservative.rhoU;
         U(cell_id, DataLayer::k_rhoV) = conservative.rhoV;
-        U(cell_id, DataLayer::k_rhoW) = conservative.rhoW;
         U(cell_id, DataLayer::k_E) = conservative.E;
-
-        lambda(cell_id) = ic.reactant_mass_fraction.value_or(0.0);
     }
 }
 
@@ -134,9 +117,8 @@ void InitialConditionInitializer::ValidateStructuredRegionShape(
 ) {
     const std::size_t nx = ic.RegionCountX();
     const std::size_t ny = ic.RegionCountY();
-    const std::size_t nz = ic.RegionCountZ();
 
-    auto validate = [&](const Field3DValues& field, const char* name) {
+    auto validate = [&](const Field2DValues& field, const char* name) {
         if (field.Nx() != nx) {
             throw std::runtime_error(
                                      std::string("InitialConditionInitializer: ") + name +
@@ -149,21 +131,10 @@ void InitialConditionInitializer::ValidateStructuredRegionShape(
                                      " y-shape does not match interface count"
                                     );
         }
-        if (field.Nz() != nz) {
-            throw std::runtime_error(
-                                     std::string("InitialConditionInitializer: ") + name +
-                                     " z-shape does not match interface count"
-                                    );
-        }
     };
 
     validate(ic.rho, "rho");
     validate(ic.u, "u");
     validate(ic.v, "v");
-    validate(ic.w, "w");
     validate(ic.p, "p");
-
-    if (ic.reactant_mass_fraction.has_value()) {
-        validate(*ic.reactant_mass_fraction, "reactant_mass_fraction");
-    }
 }

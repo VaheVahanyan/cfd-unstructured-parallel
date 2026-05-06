@@ -50,7 +50,6 @@ ConservativeCell HLLRiemannSolver::ComputeFlux(const PrimitiveCell& left,
     flux.rho = (sR * flux_left.rho - sL * flux_right.rho + sL * sR * (U_right.rho - U_left.rho)) * inv;
     flux.rhoU = (sR * flux_left.rhoU - sL * flux_right.rhoU + sL * sR * (U_right.rhoU - U_left.rhoU)) * inv;
     flux.rhoV = (sR * flux_left.rhoV - sL * flux_right.rhoV + sL * sR * (U_right.rhoV - U_left.rhoV)) * inv;
-    flux.rhoW = (sR * flux_left.rhoW - sL * flux_right.rhoW + sL * sR * (U_right.rhoW - U_left.rhoW)) * inv;
     flux.E = (sR * flux_left.E - sL * flux_right.E + sL * sR * (U_right.E - U_left.E)) * inv;
 
     return flux;

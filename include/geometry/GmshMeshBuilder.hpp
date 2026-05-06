@@ -47,12 +47,11 @@ public:
 
 private:
     /**
-     * @brief Small 3D vector utility.
+     * @brief Small 2D vector utility.
      */
-    struct Vec3 final {
+    struct Vec2 final {
         double x = 0.0;
         double y = 0.0;
-        double z = 0.0;
     };
 
     /**
@@ -101,20 +100,19 @@ private:
 
     [[nodiscard]] static FaceKey MakeFaceKey(const std::vector<std::size_t>& node_ids);
 
-    [[nodiscard]] static Vec3 Add(const Vec3& a, const Vec3& b);
-    [[nodiscard]] static Vec3 Subtract(const Vec3& a, const Vec3& b);
-    [[nodiscard]] static Vec3 Multiply(double scalar, const Vec3& v);
-    [[nodiscard]] static Vec3 Divide(const Vec3& v, double scalar);
-    [[nodiscard]] static double Dot(const Vec3& a, const Vec3& b);
-    [[nodiscard]] static Vec3 Cross(const Vec3& a, const Vec3& b);
-    [[nodiscard]] static double Norm(const Vec3& v);
-    [[nodiscard]] static Vec3 Normalize(const Vec3& v);
-    [[nodiscard]] static Vec3 ToVec3(const Node& node);
+    [[nodiscard]] static Vec2 Add(const Vec2& a, const Vec2& b);
+    [[nodiscard]] static Vec2 Subtract(const Vec2& a, const Vec2& b);
+    [[nodiscard]] static Vec2 Multiply(double scalar, const Vec2& v);
+    [[nodiscard]] static Vec2 Divide(const Vec2& v, double scalar);
+    [[nodiscard]] static double Dot(const Vec2& a, const Vec2& b);
+    [[nodiscard]] static double Norm(const Vec2& v);
+    [[nodiscard]] static Vec2 Normalize(const Vec2& v);
+    [[nodiscard]] static Vec2 ToVec2(const Node& node);
 
     [[nodiscard]] static auto ComputePolygonCenter(
         const std::vector<std::size_t>& node_ids,
         const std::vector<Node>& nodes
-    ) -> Vec3;
+    ) -> Vec2;
 
     [[nodiscard]] static double ComputeEdgeLength(
         const std::vector<std::size_t>& node_ids,
@@ -132,10 +130,10 @@ private:
     );
 
     [[nodiscard]] static double ComputeTetraVolume(
-        const Vec3& a,
-        const Vec3& b,
-        const Vec3& c,
-        const Vec3& d
+        const Vec2& a,
+        const Vec2& b,
+        const Vec2& c,
+        const Vec2& d
     );
 
     [[nodiscard]] static double ComputeCellVolume3D(

@@ -18,29 +18,25 @@ void PositivityLimiter::Apply(DataLayer& layer,
         double rho = U(cell_id, DataLayer::k_rho);
         double rhoU = U(cell_id, DataLayer::k_rhoU);
         double rhoV = U(cell_id, DataLayer::k_rhoV);
-        double rhoW = U(cell_id, DataLayer::k_rhoW);
         double E = U(cell_id, DataLayer::k_E);
 
         double u = 0.0;
         double v = 0.0;
-        double w = 0.0;
 
         if (rho > 0.0) {
             const double inv_rho = 1.0 / rho;
             u = rhoU * inv_rho;
             v = rhoV * inv_rho;
-            w = rhoW * inv_rho;
         }
 
         if (rho_min > 0.0 && rho < rho_min) {
             rho = rho_min;
             rhoU = rho * u;
             rhoV = rho * v;
-            rhoW = rho * w;
         }
 
         if (p_min > 0.0) {
-            const double kinetic = 0.5 * rho * (u * u + v * v + w * w);
+            const double kinetic = 0.5 * rho * (u * u + v * v);
             const double internal_energy_density = E - kinetic;
             const double P = (gamma - 1.0) * internal_energy_density;
 
@@ -53,7 +49,6 @@ void PositivityLimiter::Apply(DataLayer& layer,
         U(cell_id, DataLayer::k_rho) = rho;
         U(cell_id, DataLayer::k_rhoU) = rhoU;
         U(cell_id, DataLayer::k_rhoV) = rhoV;
-        U(cell_id, DataLayer::k_rhoW) = rhoW;
         U(cell_id, DataLayer::k_E) = E;
     }
 }

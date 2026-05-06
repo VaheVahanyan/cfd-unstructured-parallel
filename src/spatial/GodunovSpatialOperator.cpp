@@ -18,8 +18,8 @@
 #include "riemann/RusanovRiemannSolver.hpp"
 #include "riemann/HLLRiemannSolver.hpp"
 #include "riemann/HLLCRiemannSolver.hpp"
-#include "riemann/RoeRiemannSolver.hpp"
-#include "riemann/ExactIdealGasRiemannSolver.hpp"
+// #include "riemann/RoeRiemannSolver.hpp"
+// #include "riemann/ExactIdealGasRiemannSolver.hpp"
 #include "riemann/RiemannSolver.hpp"
 
 GodunovSpatialOperator::GodunovSpatialOperator(
@@ -84,15 +84,15 @@ void GodunovSpatialOperator::InitializeRiemannSolver(const Settings& settings) {
         return;
     }
 
-    if (name == "roe") {
-        riemann_solver_ = std::make_shared<RoeRiemannSolver>();
-        return;
-    }
-
-    if (name == "exact") {
-        riemann_solver_ = std::make_shared<ExactIdealGasRiemannSolver>(0.0, settings.Q_user);
-        return;
-    }
+    // if (name == "roe") {
+    //     riemann_solver_ = std::make_shared<RoeRiemannSolver>();
+    //     return;
+    // }
+    //
+    // if (name == "exact") {
+    //     riemann_solver_ = std::make_shared<ExactIdealGasRiemannSolver>(0.0, settings.Q_user);
+    //     return;
+    // }
 
     throw std::runtime_error(
         "GodunovSpatialOperator::InitializeRiemannSolver: unsupported riemann solver '" +
@@ -112,7 +112,6 @@ void GodunovSpatialOperator::FillPrimitiveCache(const DataLayer& layer,
         U_cell.rho = U(cell_id, DataLayer::k_rho);
         U_cell.rhoU = U(cell_id, DataLayer::k_rhoU);
         U_cell.rhoV = U(cell_id, DataLayer::k_rhoV);
-        U_cell.rhoW = U(cell_id, DataLayer::k_rhoW);
         U_cell.E = U(cell_id, DataLayer::k_E);
 
         const PrimitiveCell w = PrimitiveFromConservativeCell(U_cell, gamma);
@@ -120,7 +119,6 @@ void GodunovSpatialOperator::FillPrimitiveCache(const DataLayer& layer,
         W(cell_id, Workspace::k_rho) = w.rho;
         W(cell_id, Workspace::k_u) = w.u;
         W(cell_id, Workspace::k_v) = w.v;
-        W(cell_id, Workspace::k_w) = w.w;
         W(cell_id, Workspace::k_p) = w.P;
     }
 }
@@ -129,7 +127,6 @@ FaceNormal GodunovSpatialOperator::BuildFaceNormal(const Face& face) const {
     FaceNormal normal;
     normal.x = face.normal_x;
     normal.y = face.normal_y;
-    normal.z = face.normal_z;
     return normal;
 }
 
@@ -145,7 +142,6 @@ void GodunovSpatialOperator::AccumulateFluxToOwner(const Mesh& mesh,
     rhs(face.owner_cell_id, DataLayer::k_rho) -= flux.rho * scale;
     rhs(face.owner_cell_id, DataLayer::k_rhoU) -= flux.rhoU * scale;
     rhs(face.owner_cell_id, DataLayer::k_rhoV) -= flux.rhoV * scale;
-    rhs(face.owner_cell_id, DataLayer::k_rhoW) -= flux.rhoW * scale;
     rhs(face.owner_cell_id, DataLayer::k_E) -= flux.E * scale;
 }
 
@@ -161,7 +157,6 @@ void GodunovSpatialOperator::AccumulateFluxToNeighbor(const Mesh& mesh,
     rhs(face.neighbor_cell_id, DataLayer::k_rho) += flux.rho * scale;
     rhs(face.neighbor_cell_id, DataLayer::k_rhoU) += flux.rhoU * scale;
     rhs(face.neighbor_cell_id, DataLayer::k_rhoV) += flux.rhoV * scale;
-    rhs(face.neighbor_cell_id, DataLayer::k_rhoW) += flux.rhoW * scale;
     rhs(face.neighbor_cell_id, DataLayer::k_E) += flux.E * scale;
 }
 

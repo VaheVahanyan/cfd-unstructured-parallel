@@ -33,8 +33,7 @@ namespace {
 
         bool operator==(const PointKey& other) const {
             return std::abs(x - other.x) < MERGE_TOLERANCE &&
-                std::abs(y - other.y) < MERGE_TOLERANCE &&
-                std::abs(z - other.z) < MERGE_TOLERANCE;
+                std::abs(y - other.y) < MERGE_TOLERANCE;
         }
     };
 
@@ -44,7 +43,7 @@ namespace {
                 long long rounded = static_cast<long long>(val / MERGE_TOLERANCE);
                 return std::hash<long long>{}(rounded);
             };
-            return hash_double(p.x) ^ (hash_double(p.y) << 1) ^ (hash_double(p.z) << 2);
+            return hash_double(p.x) ^ (hash_double(p.y) << 1);
         }
     };
 

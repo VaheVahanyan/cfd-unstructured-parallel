@@ -21,7 +21,6 @@ PrimitiveCell BoundaryFactory::PrimitiveFromBoundaryState(
     primitive.rho = state.rho;
     primitive.u = state.u;
     primitive.v = state.v;
-    primitive.w = state.w;
     primitive.P = state.p;
     return primitive;
 }

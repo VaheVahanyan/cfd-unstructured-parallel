@@ -34,7 +34,6 @@ ConservativeCell RusanovRiemannSolver::ComputeFlux(const PrimitiveCell& left,
     flux.rho = 0.5 * (flux_left.rho + flux_right.rho - a_max * (U_right.rho - U_left.rho));
     flux.rhoU = 0.5 * (flux_left.rhoU + flux_right.rhoU - a_max * (U_right.rhoU - U_left.rhoU));
     flux.rhoV = 0.5 * (flux_left.rhoV + flux_right.rhoV - a_max * (U_right.rhoV - U_left.rhoV));
-    flux.rhoW = 0.5 * (flux_left.rhoW + flux_right.rhoW - a_max * (U_right.rhoW - U_left.rhoW));
     flux.E = 0.5 * (flux_left.E + flux_right.E - a_max * (U_right.E - U_left.E));
 
     return flux;

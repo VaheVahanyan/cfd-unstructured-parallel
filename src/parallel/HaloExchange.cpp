@@ -29,24 +29,7 @@ void HaloExchange::CreatePacketType() {
         return;
     }
 
-    CellStatePacket sample{};
-
-    int block_lengths[2] = {5, 1};
-    MPI_Aint displacements[2] = {};
-    MPI_Datatype types[2] = {MPI_DOUBLE, MPI_DOUBLE};
-
-    MPI_Aint base_address = 0;
-    MPI_Aint u_address = 0;
-    MPI_Aint lambda_address = 0;
-
-    MPI_Get_address(&sample, &base_address);
-    MPI_Get_address(&sample.U[0], &u_address);
-    MPI_Get_address(&sample.lambda, &lambda_address);
-
-    displacements[0] = u_address - base_address;
-    displacements[1] = lambda_address - base_address;
-
-    MPI_Type_create_struct(2, block_lengths, displacements, types, &packet_type_);
+    MPI_Type_contiguous(4, MPI_DOUBLE, &packet_type_);
     MPI_Type_commit(&packet_type_);
 }
 
@@ -62,7 +45,6 @@ std::vector<HaloExchange::CellStatePacket> HaloExchange::PackSendBuffer(
     const std::vector<std::size_t>& send_local_ids
 ) const {
     const auto& U = layer.U();
-    const auto& lambda = layer.ReactantMassFraction();
 
     std::vector<CellStatePacket> buffer(send_local_ids.size());
 
@@ -72,9 +54,7 @@ std::vector<HaloExchange::CellStatePacket> HaloExchange::PackSendBuffer(
         buffer[i].U[0] = U(cell_id, DataLayer::k_rho);
         buffer[i].U[1] = U(cell_id, DataLayer::k_rhoU);
         buffer[i].U[2] = U(cell_id, DataLayer::k_rhoV);
-        buffer[i].U[3] = U(cell_id, DataLayer::k_rhoW);
-        buffer[i].U[4] = U(cell_id, DataLayer::k_E);
-        buffer[i].lambda = lambda(cell_id);
+        buffer[i].U[3] = U(cell_id, DataLayer::k_E);
     }
 
     return buffer;
@@ -90,7 +70,6 @@ void HaloExchange::UnpackRecvBuffer(
     }
 
     auto& U = layer.U();
-    auto& lambda = layer.ReactantMassFraction();
 
     for (std::size_t i = 0; i < recv_local_ids.size(); ++i) {
         const std::size_t cell_id = recv_local_ids[i];
@@ -98,9 +77,7 @@ void HaloExchange::UnpackRecvBuffer(
         U(cell_id, DataLayer::k_rho) = recv_buffer[i].U[0];
         U(cell_id, DataLayer::k_rhoU) = recv_buffer[i].U[1];
         U(cell_id, DataLayer::k_rhoV) = recv_buffer[i].U[2];
-        U(cell_id, DataLayer::k_rhoW) = recv_buffer[i].U[3];
-        U(cell_id, DataLayer::k_E) = recv_buffer[i].U[4];
-        lambda(cell_id) = recv_buffer[i].lambda;
+        U(cell_id, DataLayer::k_E) = recv_buffer[i].U[3];
     }
 }
 

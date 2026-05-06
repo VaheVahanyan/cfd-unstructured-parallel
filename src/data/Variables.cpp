@@ -8,7 +8,6 @@ ConservativeCell& ConservativeCell::operator+=(const ConservativeCell& other) {
     rho += other.rho;
     rhoU += other.rhoU;
     rhoV += other.rhoV;
-    rhoW += other.rhoW;
     E += other.E;
     return *this;
 }
@@ -17,7 +16,6 @@ ConservativeCell& ConservativeCell::operator-=(const ConservativeCell& other) {
     rho -= other.rho;
     rhoU -= other.rhoU;
     rhoV -= other.rhoV;
-    rhoW -= other.rhoW;
     E -= other.E;
     return *this;
 }
@@ -36,7 +34,6 @@ ConservativeCell operator*(const double scalar, ConservativeCell value) {
     value.rho *= scalar;
     value.rhoU *= scalar;
     value.rhoV *= scalar;
-    value.rhoW *= scalar;
     value.E *= scalar;
     return value;
 }
@@ -51,7 +48,6 @@ ConservativeCell ConservativeFromPrimitive(const PrimitiveCell& w, const double 
     U.rho = w.rho;
     U.rhoU = w.rho * w.u;
     U.rhoV = w.rho * w.v;
-    U.rhoW = w.rho * w.w;
     U.E = TotalEnergyDensity(w, gamma);
 
     return U;
@@ -68,9 +64,8 @@ PrimitiveCell PrimitiveFromConservativeCell(const ConservativeCell& U,
 
     const double u = U.rhoU * inv_rho;
     const double v = U.rhoV * inv_rho;
-    const double ww = U.rhoW * inv_rho;
 
-    const double kinetic = 0.5 * rho * (u * u + v * v + ww * ww);
+    const double kinetic = 0.5 * rho * (u * u + v * v);
     const double internal_energy_density = U.E - kinetic;
     const double P_raw = (gamma - 1.0) * internal_energy_density;
     const double P = (P_raw > p_floor) ? P_raw : p_floor;
@@ -78,7 +73,6 @@ PrimitiveCell PrimitiveFromConservativeCell(const ConservativeCell& U,
     w.rho = rho;
     w.u = u;
     w.v = v;
-    w.w = ww;
     w.P = P;
 
     return w;
@@ -89,12 +83,10 @@ void PrimitiveToConservative(const PrimitiveCell& w,
                              double& rho,
                              double& rhoU,
                              double& rhoV,
-                             double& rhoW,
                              double& E) {
     rho = w.rho;
     rhoU = w.rho * w.u;
     rhoV = w.rho * w.v;
-    rhoW = w.rho * w.w;
     E = TotalEnergyDensity(w, gamma);
 }
 
@@ -109,7 +101,7 @@ double SoundSpeed(const PrimitiveCell& w,
 }
 
 double KineticEnergyDensity(const PrimitiveCell& w) {
-    return 0.5 * w.rho * (w.u * w.u + w.v * w.v + w.w * w.w);
+    return 0.5 * w.rho * (w.u * w.u + w.v * w.v);
 }
 
 double TotalEnergyDensity(const PrimitiveCell& w, const double gamma) {
@@ -117,16 +109,12 @@ double TotalEnergyDensity(const PrimitiveCell& w, const double gamma) {
 }
 
 bool IsUnitNormal(const FaceNormal& normal, const double tolerance) {
-    const double norm =
-        std::sqrt(normal.x * normal.x +
-                  normal.y * normal.y +
-                  normal.z * normal.z);
-
+    const double norm = std::sqrt(normal.x * normal.x + normal.y * normal.y);
     return std::abs(norm - 1.0) <= tolerance;
 }
 
 double NormalVelocity(const PrimitiveCell& w, const FaceNormal& normal) {
-    return w.u * normal.x + w.v * normal.y + w.w * normal.z;
+    return w.u * normal.x + w.v * normal.y;
 }
 
 ConservativeCell PhysicalFlux(const PrimitiveCell& w,
@@ -139,7 +127,6 @@ ConservativeCell PhysicalFlux(const PrimitiveCell& w,
     flux.rho = w.rho * vn;
     flux.rhoU = w.rho * w.u * vn + w.P * normal.x;
     flux.rhoV = w.rho * w.v * vn + w.P * normal.y;
-    flux.rhoW = w.rho * w.w * vn + w.P * normal.z;
     flux.E = (E + w.P) * vn;
 
     return flux;
@@ -154,7 +141,6 @@ FluxCell EulerFlux(const PrimitiveCell& w,
     result.mass = flux.rho;
     result.mom_x = flux.rhoU;
     result.mom_y = flux.rhoV;
-    result.mom_z = flux.rhoW;
     result.energy = flux.E;
 
     return result;

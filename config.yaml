@@ -20,10 +20,10 @@ defaults:
             gamma: 1.4
 
     numerics:
-        method: godunov
+        method: godunov-kolgan
         parameters:
             time_integrator: euler
-            reconstruction: p0
+            reconstruction: p1
             riemann_solver: hllc
             cfl: 0.2
             global_limiter: false

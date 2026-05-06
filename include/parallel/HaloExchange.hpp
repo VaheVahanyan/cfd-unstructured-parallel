@@ -17,8 +17,7 @@ class MPIContext;
  * @brief Exchanges ghost-cell conservative state between neighboring MPI ranks.
  *
  * Data packet sent per cell:
- * - U[5] conservative variables
- * - lambda reactant mass fraction
+ * - U[4] conservative variables
  *
  * Communication pattern:
  * - post all Irecv
@@ -30,8 +29,7 @@ class MPIContext;
 class HaloExchange final : public StateSynchronizer {
 public:
     struct CellStatePacket final {
-        double U[5];
-        double lambda = 0.0;
+        double U[4];
     };
 
     HaloExchange(const MPIContext& mpi,

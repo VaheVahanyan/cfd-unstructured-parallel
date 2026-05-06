@@ -4,13 +4,12 @@
 
 void Workspace::ResizeFrom(const Mesh& mesh) {
     const std::size_t n_cells = mesh.GetCellCount();
-    const std::size_t n_faces = mesh.GetFaceCount();
 
-    if (n_cells == n_cells_ && n_faces == n_faces_ && IsAllocated()) {
+    if (n_cells == n_cells_ && IsAllocated()) {
         return;
     }
 
-    Allocate(n_cells, n_faces);
+    Allocate(n_cells);
 }
 
 // -------------------- cell-centered getters --------------------
@@ -31,86 +30,38 @@ const xt::xtensor<double, 2>& Workspace::Rhs() const {
     return rhs_;
 }
 
-xt::xtensor<double, 1>& Workspace::Temperature() {
-    return temperature_;
+// -------------------- cell-centered gradient getters --------------------
+
+xt::xtensor<double, 2>& Workspace::GradRho() {
+    return grad_rho_;
 }
 
-const xt::xtensor<double, 1>& Workspace::Temperature() const {
-    return temperature_;
+const xt::xtensor<double, 2>& Workspace::GradRho() const {
+    return grad_rho_;
 }
 
-xt::xtensor<double, 1>& Workspace::InternalEnergy() {
-    return internal_energy_;
+xt::xtensor<double, 2>& Workspace::GradU() {
+    return grad_u_;
 }
 
-const xt::xtensor<double, 1>& Workspace::InternalEnergy() const {
-    return internal_energy_;
+const xt::xtensor<double, 2>& Workspace::GradU() const {
+    return grad_u_;
 }
 
-xt::xtensor<double, 1>& Workspace::Q() {
-    return q_;
+xt::xtensor<double, 2>& Workspace::GradV() {
+    return grad_v_;
 }
 
-const xt::xtensor<double, 1>& Workspace::Q() const {
-    return q_;
+const xt::xtensor<double, 2>& Workspace::GradV() const {
+    return grad_v_;
 }
 
-xt::xtensor<double, 2>& Workspace::D() {
-    return D_;
+xt::xtensor<double, 2>& Workspace::GradP() {
+    return grad_p_;
 }
 
-const xt::xtensor<double, 2>& Workspace::D() const {
-    return D_;
-}
-
-// -------------------- face-centered getters --------------------
-
-xt::xtensor<double, 1>& Workspace::Ux() {
-    return ux_;
-}
-
-const xt::xtensor<double, 1>& Workspace::Ux() const {
-    return ux_;
-}
-
-xt::xtensor<double, 1>& Workspace::Vy() {
-    return vy_;
-}
-
-const xt::xtensor<double, 1>& Workspace::Vy() const {
-    return vy_;
-}
-
-xt::xtensor<double, 1>& Workspace::Wz() {
-    return wz_;
-}
-
-const xt::xtensor<double, 1>& Workspace::Wz() const {
-    return wz_;
-}
-
-xt::xtensor<double, 1>& Workspace::UxOld() {
-    return ux_old_;
-}
-
-const xt::xtensor<double, 1>& Workspace::UxOld() const {
-    return ux_old_;
-}
-
-xt::xtensor<double, 1>& Workspace::VyOld() {
-    return vy_old_;
-}
-
-const xt::xtensor<double, 1>& Workspace::VyOld() const {
-    return vy_old_;
-}
-
-xt::xtensor<double, 1>& Workspace::WzOld() {
-    return wz_old_;
-}
-
-const xt::xtensor<double, 1>& Workspace::WzOld() const {
-    return wz_old_;
+const xt::xtensor<double, 2>& Workspace::GradP() const {
+    return grad_p_;
 }
 
 // -------------------- zero helpers --------------------
@@ -123,119 +74,44 @@ void Workspace::ZeroRhs() {
     rhs_.fill(0.0);
 }
 
-void Workspace::ZeroTemperature() {
-    temperature_.fill(0.0);
-}
-
-void Workspace::ZeroInternalEnergy() {
-    internal_energy_.fill(0.0);
-}
-
-void Workspace::ZeroQ() {
-    q_.fill(0.0);
-}
-
-void Workspace::ZeroD() {
-    D_.fill(0.0);
-}
-
-void Workspace::ZeroUx() {
-    ux_.fill(0.0);
-}
-
-void Workspace::ZeroVy() {
-    vy_.fill(0.0);
-}
-
-void Workspace::ZeroWz() {
-    wz_.fill(0.0);
-}
-
-void Workspace::ZeroUxOld() {
-    ux_old_.fill(0.0);
-}
-
-void Workspace::ZeroVyOld() {
-    vy_old_.fill(0.0);
-}
-
-void Workspace::ZeroWzOld() {
-    wz_old_.fill(0.0);
+void Workspace::ZeroGradients() {
+    grad_rho_.fill(0.0);
+    grad_u_.fill(0.0);
+    grad_v_.fill(0.0);
+    grad_p_.fill(0.0);
 }
 
 void Workspace::ZeroAll() {
     ZeroW();
     ZeroRhs();
-    ZeroTemperature();
-    ZeroInternalEnergy();
-    ZeroQ();
-    ZeroD();
-    ZeroUx();
-    ZeroVy();
-    ZeroWz();
-    ZeroUxOld();
-    ZeroVyOld();
-    ZeroWzOld();
+    ZeroGradients();
 }
 
 bool Workspace::IsAllocated() const {
     return
-        W_.dimension() == 2 &&
-        rhs_.dimension() == 2 &&
-        temperature_.dimension() == 1 &&
-        internal_energy_.dimension() == 1 &&
-        q_.dimension() == 1 &&
-        D_.dimension() == 2 &&
-        ux_.dimension() == 1 &&
-        vy_.dimension() == 1 &&
-        wz_.dimension() == 1 &&
-        ux_old_.dimension() == 1 &&
-        vy_old_.dimension() == 1 &&
-        wz_old_.dimension() == 1 &&
+        W_.dimension() == 2 && rhs_.dimension() == 2 &&
+        grad_rho_.dimension() == 2 && grad_u_.dimension() == 2 &&
+        grad_v_.dimension() == 2 && grad_p_.dimension() == 2 &&
         W_.shape()[0] == n_cells_ &&
         W_.shape()[1] == k_nvar &&
-        rhs_.shape()[0] == n_cells_ &&
-        rhs_.shape()[1] == k_nvar &&
-        temperature_.shape()[0] == n_cells_ &&
-        internal_energy_.shape()[0] == n_cells_ &&
-        q_.shape()[0] == n_cells_ &&
-        D_.shape()[0] == n_cells_ &&
-        D_.shape()[1] == k_ndelta &&
-        ux_.shape()[0] == n_faces_ &&
-        vy_.shape()[0] == n_faces_ &&
-        wz_.shape()[0] == n_faces_ &&
-        ux_old_.shape()[0] == n_faces_ &&
-        vy_old_.shape()[0] == n_faces_ &&
-        wz_old_.shape()[0] == n_faces_;
+        grad_rho_.shape()[0] == n_cells_ && grad_rho_.shape()[1] == 2;
 }
 
 std::size_t Workspace::GetCellCount() const {
     return n_cells_;
 }
 
-std::size_t Workspace::GetFaceCount() const {
-    return n_faces_;
-}
-
-void Workspace::Allocate(const std::size_t n_cells, const std::size_t n_faces) {
+void Workspace::Allocate(const std::size_t n_cells) {
     n_cells_ = n_cells;
-    n_faces_ = n_faces;
 
-    // cell-centered
-    W_ = xt::zeros<double>({n_cells_, k_nvar});
-    rhs_ = xt::zeros<double>({n_cells_, k_nvar});
+    const std::vector<std::size_t> var_shape = {n_cells_, k_nvar};
+    const std::vector<std::size_t> grad_shape = {n_cells_, 2};
 
-    temperature_ = xt::zeros<double>({n_cells_});
-    internal_energy_ = xt::zeros<double>({n_cells_});
-    q_ = xt::zeros<double>({n_cells_});
-    D_ = xt::zeros<double>({n_cells_, k_ndelta});
+    W_ = xt::zeros<double>(var_shape);
+    rhs_ = xt::zeros<double>(var_shape);
 
-    // face-centered velocities
-    ux_ = xt::zeros<double>({n_faces_});
-    vy_ = xt::zeros<double>({n_faces_});
-    wz_ = xt::zeros<double>({n_faces_});
-
-    ux_old_ = xt::zeros<double>({n_faces_});
-    vy_old_ = xt::zeros<double>({n_faces_});
-    wz_old_ = xt::zeros<double>({n_faces_});
+    grad_rho_ = xt::zeros<double>(grad_shape);
+    grad_u_ = xt::zeros<double>(grad_shape);
+    grad_v_ = xt::zeros<double>(grad_shape);
+    grad_p_ = xt::zeros<double>(grad_shape);
 }
