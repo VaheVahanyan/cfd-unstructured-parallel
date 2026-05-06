@@ -1,6 +1,7 @@
 #ifndef MPICONTEXT_HPP
 #define MPICONTEXT_HPP
 
+#include <string>
 #include <stdexcept>
 
 #include <mpi.h>
@@ -15,15 +16,11 @@
  *  - exposing rank/size helpers
  *  - providing basic collectives needed by the solver
  *
- * By default it uses MPI_COMM_WORLD.
+ * MPI is initialized with MPI_THREAD_FUNNELED support because OpenMP is used
+ * only outside MPI calls.
  */
 class MPIContext final {
 public:
-    /**
-     * @brief Construct MPI context on a communicator.
-     * @param comm MPI communicator, default is MPI_COMM_WORLD.
-     * @param owns_lifetime If true, Initialize/Finalize are managed by this object.
-     */
     explicit MPIContext(MPI_Comm comm = MPI_COMM_WORLD, bool owns_lifetime = false);
 
     ~MPIContext();
@@ -112,7 +109,7 @@ public:
      */
     [[nodiscard]] int GlobalSum(int value) const;
 
-    auto BroadcastString(const std::string& value, int root = 0) const -> std::string;
+    [[nodiscard]] std::string BroadcastString(const std::string& value, int root = 0) const;
 
 private:
     MPI_Comm comm_ = MPI_COMM_WORLD;

@@ -9,7 +9,8 @@
 
 #include "utils/StringUtils.hpp"
 
-namespace {
+namespace
+{
     template <typename T>
     void AssignIfPresent(const YAML::Node& node, const char* key, T& target) {
         if (node[key]) {
@@ -77,8 +78,7 @@ ParsedYamlConfig YamlConfigParser::ParseFile(const std::string& filename) const 
 
     if (root["run"]) {
         ParseRunCases(root["run"], result.run_cases);
-    }
-    else {
+    } else {
         result.run_cases = {"all"};
     }
 
@@ -459,8 +459,10 @@ void YamlConfigParser::ParseOutput(const YAML::Node& node, Settings& settings) {
 
 void YamlConfigParser::ParseParallel(const YAML::Node& node, Settings& settings) {
     AssignIfPresent(node, "mpi", settings.mpi_enabled);
+    AssignIfPresent(node, "omp_threads", settings.omp_threads);
+    AssignIfPresent(node, "use_morton", settings.use_morton);
     if (node["decomposition"]) {
-        settings.domain_decomposition_method = node["decomposition"].as<std::string>();
+        settings.domain_decomposition_method = utils::ToLower(node["decomposition"].as<std::string>());
     }
 }
 
@@ -569,6 +571,11 @@ void YamlConfigParser::ApplyCaseOverrides(const YAML::Node& case_node,
     if (case_node["parallel"]) {
         const YAML::Node parallel_node = case_node["parallel"];
         AssignOptionalIfPresent(parallel_node, "mpi", overrides.mpi_enabled);
+        AssignOptionalIfPresent(parallel_node, "use_morton", overrides.use_morton);
+        AssignOptionalIfPresent(parallel_node, "omp_threads", overrides.omp_threads);
+        if (parallel_node["decomposition"]) {
+            overrides.domain_decomposition_method = utils::ToLower(parallel_node["decomposition"].as<std::string>());
+        }
     }
 }
 
@@ -610,11 +617,9 @@ void YamlConfigParser::ParseStructuredInitialCondition(const YAML::Node& ic_node
 
     if (effective_settings.mesh.dim == 1) {
         ParseStructured1D(ic_node, structured_ic);
-    }
-    else if (effective_settings.mesh.dim == 2) {
+    } else if (effective_settings.mesh.dim == 2) {
         ParseStructured2D(ic_node, structured_ic);
-    }
-    else {
+    } else {
         throw std::runtime_error("Unsupported dimension in structured initial condition");
     }
 
@@ -640,12 +645,11 @@ void YamlConfigParser::ParseStructured1D(const YAML::Node& ic_node, StructuredRe
     const auto rho_1d = ReadVectorDouble(ic_node["rho"]);
     const auto u_1d = ReadVectorDouble(ic_node["u"]);
     const auto v_1d = ReadVectorDouble(ic_node["v"]);
-    const auto w_1d = ReadVectorDouble(ic_node["w"]);
     const auto p_1d = ReadVectorDouble(ic_node["p"]);
 
     const std::size_t nx = rho_1d.size();
 
-    if (u_1d.size() != nx || v_1d.size() != nx || w_1d.size() != nx || p_1d.size() != nx) {
+    if (u_1d.size() != nx || v_1d.size() != nx || p_1d.size() != nx) {
         throw std::runtime_error("1D initial-condition arrays must have identical size");
     }
 
@@ -682,11 +686,10 @@ void YamlConfigParser::ParseStructured2D(const YAML::Node& ic_node, StructuredRe
         const auto rho_1d = ReadVectorDouble(ic_node["rho"]);
         const auto u_1d = ReadVectorDouble(ic_node["u"]);
         const auto v_1d = ReadVectorDouble(ic_node["v"]);
-        const auto w_1d = ReadVectorDouble(ic_node["w"]);
         const auto p_1d = ReadVectorDouble(ic_node["p"]);
 
         if (rho_1d.size() != ny || u_1d.size() != ny || v_1d.size() != ny ||
-            w_1d.size() != ny || p_1d.size() != ny) {
+            p_1d.size() != ny) {
             throw std::runtime_error("2D y-only initial-condition arrays must match y-region count");
         }
 
@@ -711,7 +714,6 @@ void YamlConfigParser::ParseStructured2D(const YAML::Node& ic_node, StructuredRe
     const auto rho_2d = ReadMatrixDouble(ic_node["rho"]);
     const auto u_2d = ReadMatrixDouble(ic_node["u"]);
     const auto v_2d = ReadMatrixDouble(ic_node["v"]);
-    const auto w_2d = ReadMatrixDouble(ic_node["w"]);
     const auto p_2d = ReadMatrixDouble(ic_node["p"]);
 
     auto lift_2d = [&](const std::vector<std::vector<double>>& src) -> Field2DValues {

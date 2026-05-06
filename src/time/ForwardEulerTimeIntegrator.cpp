@@ -27,10 +27,14 @@ void ForwardEulerTimeIntegrator::Advance(DataLayer& layer,
     auto& U = layer.U();
     const auto& rhs = workspace.Rhs();
 
-    for (std::size_t cell_id = 0; cell_id < mesh.GetOwnedCellCount(); ++cell_id) {
-        for (std::size_t var = 0; var < DataLayer::k_nvar; ++var) {
-            U(cell_id, var) += dt * rhs(cell_id, var);
-        }
+    const std::size_t n_owned = mesh.GetOwnedCellCount();
+
+#pragma omp parallel for default(none) shared(U, rhs, n_owned) firstprivate(dt)
+    for (std::size_t i = 0; i < n_owned; ++i) {
+        U(i, 0) += dt * rhs(i, 0);
+        U(i, 1) += dt * rhs(i, 1);
+        U(i, 2) += dt * rhs(i, 2);
+        U(i, 3) += dt * rhs(i, 3);
     }
 
     PositivityLimiter::Apply(layer, mesh, gamma, rho_min_, p_min_);

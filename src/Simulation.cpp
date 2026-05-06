@@ -27,6 +27,13 @@
 #include "utils/StringUtils.hpp"
 #include "output/VTKRecomposer.hpp"
 #include "parallel/MeshDistribution.hpp"
+#include "parallel/RCBDecomposition.hpp"
+#include "parallel/METISDecomposition.hpp"
+#include "geometry/MortonOrder.hpp"
+
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 
 Simulation::Simulation(Settings settings, InitialConditions initial_conditions)
     : settings_(std::move(settings)),
@@ -35,6 +42,13 @@ Simulation::Simulation(Settings settings, InitialConditions initial_conditions)
 Simulation::~Simulation() = default;
 
 void Simulation::Initialize() {
+#ifdef _OPENMP
+    if (settings_.omp_threads > 0) {
+        omp_set_num_threads(settings_.omp_threads);
+    } else {
+        omp_set_num_threads(1);
+    }
+#endif
     ValidateConfiguration();
     BuildMesh();
     ValidateBoundaryCoverage();
@@ -202,10 +216,6 @@ void Simulation::ValidateBoundaryCoverage() const {
     }
 }
 
-#include "parallel/RCBDecomposition.hpp"
-#include "parallel/METISDecomposition.hpp"
-// Убедись, что эти заголовочные файлы подключены в начале файла Simulation.cpp
-
 void Simulation::BuildMesh() {
     mpi_context_ = std::make_unique<MPIContext>();
 
@@ -215,7 +225,6 @@ void Simulation::BuildMesh() {
         return;
     }
 
-    // 1. Выбираем стратегию декомпозиции на основе настроек
     std::unique_ptr<DomainDecomposition> decomposer;
     if (settings_.domain_decomposition_method == "metis") {
         decomposer = std::make_unique<METISDecomposition>();
@@ -228,7 +237,6 @@ void Simulation::BuildMesh() {
 
     MeshDistribution::LocalPartition local_partition;
 
-    // 2. Распределяем сетку с использованием выбранного метода
     if (mpi_context_->IsRoot()) {
         std::shared_ptr<Mesh> global_mesh = CreateMesh();
         local_partition =
@@ -284,6 +292,7 @@ void Simulation::InitializeWriter() {
 }
 
 std::shared_ptr<Mesh> Simulation::CreateMesh() const {
+    std::shared_ptr<Mesh> mesh;
     // if (settings_.mesh.source_type == MeshSourceType::StructuredCartesian) {
     //     if (!settings_.mesh.structured.has_value()) {
     //         throw std::runtime_error("Simulation: structured mesh settings are missing");
@@ -322,12 +331,16 @@ std::shared_ptr<Mesh> Simulation::CreateMesh() const {
             throw std::runtime_error("Simulation: gmsh file settings are missing");
         }
 
-        return std::make_shared<Mesh>(
+        mesh = std::make_shared<Mesh>(
             GmshMeshBuilder::BuildFromFile(
                 settings_.mesh.gmsh_file->file_path,
                 settings_.mesh.dim
             )
         );
+        if (settings_.use_morton) {
+            MortonOrder::ApplyToCells(*mesh);
+        }
+        return mesh;
     }
 
     if (settings_.mesh.source_type == MeshSourceType::GmshGeo) {
@@ -335,12 +348,16 @@ std::shared_ptr<Mesh> Simulation::CreateMesh() const {
             throw std::runtime_error("Simulation: gmsh geo settings are missing");
         }
 
-        return std::make_shared<Mesh>(
+        mesh = std::make_shared<Mesh>(
             GmshMeshBuilder::BuildFromGeoFile(
                 settings_.mesh.gmsh_geo->file_path,
                 settings_.mesh.dim
             )
         );
+        if (settings_.use_morton) {
+            MortonOrder::ApplyToCells(*mesh);
+        }
+        return mesh;
     }
 
     // if (settings_.mesh.source_type == MeshSourceType::DelaunayGeo) {

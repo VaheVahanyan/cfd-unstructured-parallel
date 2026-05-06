@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <stdexcept>
 #include <vector>
+#include <span>
 
 #include "geometry/Cell.hpp"
 #include "geometry/Face.hpp"
@@ -105,7 +106,35 @@ public:
      * @brief Validate mesh dimension, ids, connectivity, geometry, and boundary tags.
      * @throws std::runtime_error if mesh data is inconsistent.
      */
-    void Validate() const;
+    void Validate();
+
+    void ComputeFaceColors();
+
+    [[nodiscard]] int GetNumColors() const { return num_colors_; }
+    [[nodiscard]] const std::vector<std::size_t>& GetFacesByColor(int color) const {
+        return color_to_face_ids_[color];
+    }
+
+    /**
+ * @brief Return precomputed neighbor-cell ids for one local cell.
+ * @details The returned range is represented by begin/end offsets into the internal CSR storage.
+ */
+    [[nodiscard]] std::size_t GetCellNeighborBegin(std::size_t cell_id) const;
+
+    /**
+     * @brief Return end offset of precomputed neighbor-cell ids for one local cell.
+     */
+    [[nodiscard]] std::size_t GetCellNeighborEnd(std::size_t cell_id) const;
+
+    /**
+     * @brief Return one neighbor-cell id from the internal CSR storage.
+     */
+    [[nodiscard]] std::size_t GetCellNeighborId(std::size_t neighbor_offset) const;
+
+    /**
+     * @brief Return number of precomputed neighbor cells for one local cell.
+     */
+    [[nodiscard]] std::size_t GetCellNeighborCount(std::size_t cell_id) const;
 
 private:
     int dim_ = 0;
@@ -116,6 +145,14 @@ private:
 
     std::size_t owned_cell_count_ = 0;
     std::size_t ghost_cell_count_ = 0;
+
+    std::vector<std::vector<std::size_t>> color_to_face_ids_;
+    int num_colors_ = 0;
+
+    std::vector<std::size_t> cell_neighbor_offsets_;
+    std::vector<std::size_t> cell_neighbor_ids_;
+
+    void BuildCellNeighbors();
 
     void ValidateDimension() const;
     void ValidateNodeIds() const;

@@ -13,8 +13,10 @@ void PositivityLimiter::Apply(DataLayer& layer,
     }
 
     auto& U = layer.U();
+    const std::size_t n_owned = mesh.GetOwnedCellCount();
 
-    for (std::size_t cell_id = 0; cell_id < mesh.GetOwnedCellCount(); ++cell_id) {
+#pragma omp parallel for default(none) shared(U, n_owned) firstprivate(gamma, rho_min, p_min)
+    for (std::size_t cell_id = 0; cell_id < n_owned; ++cell_id) {
         double rho = U(cell_id, DataLayer::k_rho);
         double rhoU = U(cell_id, DataLayer::k_rhoU);
         double rhoV = U(cell_id, DataLayer::k_rhoV);

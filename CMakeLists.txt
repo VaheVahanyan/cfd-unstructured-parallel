@@ -14,111 +14,113 @@ set(FETCHCONTENT_TRY_FIND_PACKAGE_MODE ALWAYS)
 include(FetchContent)
 
 find_package(MPI REQUIRED)
+find_package(OpenMP)
 find_path(METIS_INCLUDE_DIR NAMES metis.h)
 
 find_library(METIS_LIBRARY NAMES metis)
 
-if(METIS_INCLUDE_DIR AND METIS_LIBRARY)
+if (METIS_INCLUDE_DIR AND METIS_LIBRARY)
     message(STATUS "Found METIS include: ${METIS_INCLUDE_DIR}")
     message(STATUS "Found METIS library: ${METIS_LIBRARY}")
-else()
+else ()
     message(FATAL_ERROR "METIS library not found! Please install it or specify paths manually.")
-endif()
+endif ()
 
 include(cmake/Dependencies.cmake)
 #include(cmake/Documentation.cmake)
 
 # Explicitly list your sources
 add_executable(${NAME}
-    src/main.cpp
+        src/main.cpp
 
-    src/RunManager.cpp
-    src/Simulation.cpp
+        src/RunManager.cpp
+        src/Simulation.cpp
 
-    src/solver/SolverFactory.cpp
-    src/solver/FiniteVolumeSolver.cpp
-    include/solver/Solver.hpp
-    src/solver/TimeStepCalculator.cpp
-    src/solver/PositivityLimiter.cpp
+        src/solver/SolverFactory.cpp
+        src/solver/FiniteVolumeSolver.cpp
+        include/solver/Solver.hpp
+        src/solver/TimeStepCalculator.cpp
+        src/solver/PositivityLimiter.cpp
 
-    src/time/ForwardEulerTimeIntegrator.cpp
-    src/time/SSPRK3TimeIntegrator.cpp
-    src/time/SSPRK2TimeIntegrator.cpp
-    include/time/TimeIntegrator.hpp
+        src/time/ForwardEulerTimeIntegrator.cpp
+        src/time/SSPRK3TimeIntegrator.cpp
+        src/time/SSPRK2TimeIntegrator.cpp
+        include/time/TimeIntegrator.hpp
 
-    src/spatial/GodunovSpatialOperator.cpp
-    src/spatial/GodunovKolganRodionovSpatialOperator.cpp
-    include/spatial/SpatialOperator.hpp
+        src/spatial/GodunovSpatialOperator.cpp
+        src/spatial/GodunovKolganRodionovSpatialOperator.cpp
+        include/spatial/SpatialOperator.hpp
 
-    src/reconstruction/P0Reconstruction.cpp
-    src/reconstruction/P1Reconstruction.cpp
-    include/reconstruction/Reconstruction.hpp
+        src/reconstruction/P0Reconstruction.cpp
+        src/reconstruction/P1Reconstruction.cpp
+        include/reconstruction/Reconstruction.hpp
 
-    src/riemann/RusanovRiemannSolver.cpp
-    src/riemann/HLLRiemannSolver.cpp
-    src/riemann/HLLCRiemannSolver.cpp
-#    src/riemann/RoeRiemannSolver.cpp
-#    src/riemann/ExactIdealGasRiemannSolver.cpp
+        src/riemann/RusanovRiemannSolver.cpp
+        src/riemann/HLLRiemannSolver.cpp
+        src/riemann/HLLCRiemannSolver.cpp
+        #    src/riemann/RoeRiemannSolver.cpp
+        #    src/riemann/ExactIdealGasRiemannSolver.cpp
 
-    src/output/WriterFactory.cpp
-    src/output/VTKWriter.cpp
-    src/output/VTKRecomposer.cpp
+        src/output/WriterFactory.cpp
+        src/output/VTKWriter.cpp
+        src/output/VTKRecomposer.cpp
 
-    src/data/DataLayer.cpp
-    src/data/Variables.cpp
-    src/data/Workspace.cpp
+        src/data/DataLayer.cpp
+        src/data/Variables.cpp
+        src/data/Workspace.cpp
 
-    src/geometry/GmshMeshBuilder.cpp
-#    src/geometry/DelaunayMeshBuilder.cpp
-#    src/geometry/DelaunayTriangulator.cpp
-#    src/geometry/PointCloudBuilder.cpp
-#    src/geometry/StructuredMeshBuilder.cpp
-    src/geometry/Mesh.cpp
-    include/geometry/Node.hpp
-    include/geometry/Cell.hpp
-    src/geometry/Face.cpp
+        src/geometry/GmshMeshBuilder.cpp
+        src/geometry/MortonOrder.cpp
+        #    src/geometry/DelaunayMeshBuilder.cpp
+        #    src/geometry/DelaunayTriangulator.cpp
+        #    src/geometry/PointCloudBuilder.cpp
+        #    src/geometry/StructuredMeshBuilder.cpp
+        src/geometry/Mesh.cpp
+        include/geometry/Node.hpp
+        include/geometry/Cell.hpp
+        src/geometry/Face.cpp
 
-    src/parallel/MPIContext.cpp
-    src/parallel/HaloExchange.cpp
-    src/parallel/DomainDecomposition.cpp
-    src/parallel/METISDecomposition.cpp
-    src/parallel/RCBDecomposition.cpp
-    src/parallel/MeshDistribution.cpp
-    src/parallel/MeshSerialization.cpp
-    src/parallel/HaloSerialization.cpp
-    include/parallel/StateSynchronizer.hpp
+        src/parallel/MPIContext.cpp
+        src/parallel/HaloExchange.cpp
+        src/parallel/DomainDecomposition.cpp
+        src/parallel/METISDecomposition.cpp
+        src/parallel/RCBDecomposition.cpp
+        src/parallel/MeshDistribution.cpp
+        src/parallel/MeshSerialization.cpp
+        src/parallel/HaloSerialization.cpp
+        include/parallel/StateSynchronizer.hpp
 
-    src/config/ConfigParser.cpp
-    src/config/YamlConfigParser.cpp
-    src/config/CliParser.cpp
-    include/config/Settings.hpp
-    include/config/InitialConditions.hpp
-    src/config/InitialConditionInitializer.cpp
+        src/config/ConfigParser.cpp
+        src/config/YamlConfigParser.cpp
+        src/config/CliParser.cpp
+        include/config/Settings.hpp
+        include/config/InitialConditions.hpp
+        src/config/InitialConditionInitializer.cpp
 
-    src/bc/BoundaryFactory.cpp
-    src/bc/BoundaryManager.cpp
-    src/bc/FreeStreamBoundary.cpp
-    src/bc/InletBoundary.cpp
-    src/bc/OutletBoundary.cpp
-    src/bc/PeriodicBoundary.cpp
-    src/bc/ReflectiveBoundary.cpp
-    src/bc/NonReflectiveBoundary.cpp
-    src/bc/SymmetryBoundary.cpp
-    src/bc/WallBoundary.cpp
-    include/bc/BoundaryCondition.hpp
+        src/bc/BoundaryFactory.cpp
+        src/bc/BoundaryManager.cpp
+        src/bc/FreeStreamBoundary.cpp
+        src/bc/InletBoundary.cpp
+        src/bc/OutletBoundary.cpp
+        src/bc/PeriodicBoundary.cpp
+        src/bc/ReflectiveBoundary.cpp
+        src/bc/NonReflectiveBoundary.cpp
+        src/bc/SymmetryBoundary.cpp
+        src/bc/WallBoundary.cpp
+        include/bc/BoundaryCondition.hpp
 
-    src/utils/StringUtils.cpp
+        src/utils/StringUtils.cpp
 )
 
 target_include_directories(${NAME}
-    PRIVATE
+        PRIVATE
         ${PROJECT_SOURCE_DIR}/include
         ${PROJECT_SOURCE_DIR}/include/external
         ${METIS_INCLUDE_DIR}
 )
 
 target_link_libraries(${NAME}
-    PRIVATE
+        PRIVATE
         xtensor
         yaml-cpp::yaml-cpp
         cxxopts::cxxopts
@@ -144,7 +146,11 @@ target_link_libraries(${NAME}
 
         MPI::MPI_CXX
 
+        OpenMP::OpenMP_CXX
+
         gmsh::gmsh
 
         ${METIS_LIBRARY}
 )
+
+target_compile_definitions(${NAME} PRIVATE XTENSOR_USE_OPENMP)

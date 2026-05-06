@@ -23,6 +23,8 @@ void SSPRK3TimeIntegrator::Advance(DataLayer& layer,
     auto& U = layer.U();
     const xt::xtensor<double, 2> U0 = U;
 
+    const std::size_t n_owned = mesh.GetOwnedCellCount();
+
     if (halo_exchange) {
         halo_exchange->Synchronize(layer);
     }
@@ -44,12 +46,12 @@ void SSPRK3TimeIntegrator::Advance(DataLayer& layer,
     op.ComputeRHS(layer, mesh, workspace, gamma, dt);
 
     const auto& rhs_stage2 = workspace.Rhs();
-    for (std::size_t cell_id = 0; cell_id < mesh.GetOwnedCellCount(); ++cell_id) {
-        for (std::size_t var = 0; var < DataLayer::k_nvar; ++var) {
-            U(cell_id, var) =
-                3.0 / 4.0 * U0(cell_id, var) +
-                1.0 / 4.0 * (U(cell_id, var) + dt * rhs_stage2(cell_id, var));
-        }
+#pragma omp parallel for default(none) shared(U, U0, rhs_stage2, n_owned) firstprivate(dt)
+    for (std::size_t cell_id = 0; cell_id < n_owned; ++cell_id) {
+        U(cell_id, 0) = 3.0 / 4.0 * U0(cell_id, 0) + 1.0 / 4.0 * (U(cell_id, 0) + dt * rhs_stage2(cell_id, 0));
+        U(cell_id, 1) = 3.0 / 4.0 * U0(cell_id, 1) + 1.0 / 4.0 * (U(cell_id, 1) + dt * rhs_stage2(cell_id, 1));
+        U(cell_id, 2) = 3.0 / 4.0 * U0(cell_id, 2) + 1.0 / 4.0 * (U(cell_id, 2) + dt * rhs_stage2(cell_id, 2));
+        U(cell_id, 3) = 3.0 / 4.0 * U0(cell_id, 3) + 1.0 / 4.0 * (U(cell_id, 3) + dt * rhs_stage2(cell_id, 3));
     }
 
     PositivityLimiter::Apply(layer, mesh, gamma, rho_min_, p_min_);
@@ -61,12 +63,12 @@ void SSPRK3TimeIntegrator::Advance(DataLayer& layer,
     op.ComputeRHS(layer, mesh, workspace, gamma, dt);
 
     const auto& rhs_stage3 = workspace.Rhs();
-    for (std::size_t cell_id = 0; cell_id < mesh.GetOwnedCellCount(); ++cell_id) {
-        for (std::size_t var = 0; var < DataLayer::k_nvar; ++var) {
-            U(cell_id, var) =
-                1.0 / 3.0 * U0(cell_id, var) +
-                2.0 / 3.0 * (U(cell_id, var) + dt * rhs_stage3(cell_id, var));
-        }
+#pragma omp parallel for default(none) shared(U, U0, rhs_stage3, n_owned) firstprivate(dt)
+    for (std::size_t cell_id = 0; cell_id < n_owned; ++cell_id) {
+        U(cell_id, 0) = 1.0 / 3.0 * U0(cell_id, 0) + 2.0 / 3.0 * (U(cell_id, 0) + dt * rhs_stage3(cell_id, 0));
+        U(cell_id, 1) = 1.0 / 3.0 * U0(cell_id, 1) + 2.0 / 3.0 * (U(cell_id, 1) + dt * rhs_stage3(cell_id, 1));
+        U(cell_id, 2) = 1.0 / 3.0 * U0(cell_id, 2) + 2.0 / 3.0 * (U(cell_id, 2) + dt * rhs_stage3(cell_id, 2));
+        U(cell_id, 3) = 1.0 / 3.0 * U0(cell_id, 3) + 2.0 / 3.0 * (U(cell_id, 3) + dt * rhs_stage3(cell_id, 3));
     }
 
     PositivityLimiter::Apply(layer, mesh, gamma, rho_min_, p_min_);

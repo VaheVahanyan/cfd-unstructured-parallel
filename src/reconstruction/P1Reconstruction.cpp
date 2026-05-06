@@ -19,45 +19,37 @@ PrimitiveCell P1Reconstruction::LoadCellPrimitive(const Workspace& workspace, co
     return state;
 }
 
-void P1Reconstruction::CollectNeighborCellIds(const Mesh& mesh, const Cell& cell,
-                                              std::vector<std::size_t>& neighbor_cell_ids) const {
-    neighbor_cell_ids.clear();
-    neighbor_cell_ids.reserve(cell.face_ids.size());
-
-    for (const std::size_t face_id : cell.face_ids) {
-        const Face& face = mesh.GetFace(face_id);
-        if (face.IsPhysicalBoundary()) {
-            continue;
-        }
-
-        const std::size_t neighbor_id = (face.owner_cell_id == cell.local_id)
-                                            ? face.neighbor_cell_id
-                                            : face.owner_cell_id;
-        if (neighbor_id == Face::k_invalid_cell_id || neighbor_id == cell.local_id) {
-            continue;
-        }
-
-        neighbor_cell_ids.push_back(neighbor_id);
-    }
-}
-
 P1Reconstruction::PrimitiveGradient P1Reconstruction::ComputeUnlimitedGradient(
-    const Mesh& mesh, const Workspace& workspace, const Cell& cell,
-    const std::vector<std::size_t>& neighbor_ids) const {
+    const Mesh& mesh,
+    const Workspace& workspace,
+    const Cell& cell
+) const {
     PrimitiveGradient grad{};
-    if (neighbor_ids.empty()) {
+
+    const std::size_t begin = mesh.GetCellNeighborBegin(cell.local_id);
+    const std::size_t end = mesh.GetCellNeighborEnd(cell.local_id);
+
+    if (begin == end) {
         return grad;
     }
 
     const PrimitiveCell wc = LoadCellPrimitive(workspace, cell.local_id);
 
-    double a11 = 0.0, a12 = 0.0, a22 = 0.0;
-    double b1_rho = 0.0, b2_rho = 0.0;
-    double b1_u = 0.0, b2_u = 0.0;
-    double b1_v = 0.0, b2_v = 0.0;
-    double b1_P = 0.0, b2_P = 0.0;
+    double a11 = 0.0;
+    double a12 = 0.0;
+    double a22 = 0.0;
 
-    for (const std::size_t n_id : neighbor_ids) {
+    double b1_rho = 0.0;
+    double b2_rho = 0.0;
+    double b1_u = 0.0;
+    double b2_u = 0.0;
+    double b1_v = 0.0;
+    double b2_v = 0.0;
+    double b1_P = 0.0;
+    double b2_P = 0.0;
+
+    for (std::size_t offset = begin; offset < end; ++offset) {
+        const std::size_t n_id = mesh.GetCellNeighborId(offset);
         const Cell& neighbor = mesh.GetCell(n_id);
         const PrimitiveCell wn = LoadCellPrimitive(workspace, neighbor.local_id);
 
@@ -82,6 +74,7 @@ P1Reconstruction::PrimitiveGradient P1Reconstruction::ComputeUnlimitedGradient(
     }
 
     const double det = a11 * a22 - a12 * a12;
+
     if (std::abs(det) > 1e-14) {
         grad.dx.rho = (b1_rho * a22 - b2_rho * a12) / det;
         grad.dy.rho = (-b1_rho * a12 + b2_rho * a11) / det;
@@ -113,21 +106,30 @@ double P1Reconstruction::ComputeBarthJespersenPhi(const double w_cell, const dou
     return 1.0;
 }
 
-double P1Reconstruction::ComputeLimiter(
-    const Mesh& mesh, const Workspace& workspace, const Cell& cell,
-    const std::vector<std::size_t>& neighbor_ids, const PrimitiveGradient& grad) const {
+double P1Reconstruction::ComputeLimiter(const Mesh& mesh,
+                                        const Workspace& workspace,
+                                        const Cell& cell,
+                                        const PrimitiveGradient& grad) const {
     PrimitiveCell w_min = LoadCellPrimitive(workspace, cell.local_id);
     PrimitiveCell w_max = w_min;
     const PrimitiveCell wc = w_min;
 
-    for (const std::size_t n_id : neighbor_ids) {
+    const std::size_t begin = mesh.GetCellNeighborBegin(cell.local_id);
+    const std::size_t end = mesh.GetCellNeighborEnd(cell.local_id);
+
+    for (std::size_t offset = begin; offset < end; ++offset) {
+        const std::size_t n_id = mesh.GetCellNeighborId(offset);
         const PrimitiveCell wn = LoadCellPrimitive(workspace, n_id);
+
         w_min.rho = std::min(w_min.rho, wn.rho);
         w_max.rho = std::max(w_max.rho, wn.rho);
+
         w_min.u = std::min(w_min.u, wn.u);
         w_max.u = std::max(w_max.u, wn.u);
+
         w_min.v = std::min(w_min.v, wn.v);
         w_max.v = std::max(w_max.v, wn.v);
+
         w_min.P = std::min(w_min.P, wn.P);
         w_max.P = std::max(w_max.P, wn.P);
     }
@@ -136,6 +138,7 @@ double P1Reconstruction::ComputeLimiter(
 
     for (const std::size_t face_id : cell.face_ids) {
         const Face& face = mesh.GetFace(face_id);
+
         const double dx = face.center_x - cell.center_x;
         const double dy = face.center_y - cell.center_y;
 
@@ -163,15 +166,17 @@ void P1Reconstruction::ComputeGradients(const Mesh& mesh, Workspace& workspace) 
     auto& grad_v = workspace.GradV();
     auto& grad_p = workspace.GradP();
 
-    std::vector<std::size_t> neighbor_ids;
+    const std::size_t cell_count = mesh.GetCellCount();
 
-    for (std::size_t cell_id = 0; cell_id < mesh.GetCellCount(); ++cell_id) {
+#pragma omp parallel for schedule(static) default(none) shared(mesh, workspace, grad_rho, grad_u, grad_v, grad_p, cell_count)
+    for (std::size_t cell_id = 0; cell_id < cell_count; ++cell_id) {
         const Cell& cell = mesh.GetCell(cell_id);
 
-        CollectNeighborCellIds(mesh, cell, neighbor_ids);
-        const PrimitiveGradient grad_unlimited = ComputeUnlimitedGradient(mesh, workspace, cell, neighbor_ids);
+        const PrimitiveGradient grad_unlimited =
+            ComputeUnlimitedGradient(mesh, workspace, cell);
 
-        const double phi = ComputeLimiter(mesh, workspace, cell, neighbor_ids, grad_unlimited);
+        const double phi =
+            ComputeLimiter(mesh, workspace, cell, grad_unlimited);
 
         grad_rho(cell_id, 0) = phi * grad_unlimited.dx.rho;
         grad_rho(cell_id, 1) = phi * grad_unlimited.dy.rho;

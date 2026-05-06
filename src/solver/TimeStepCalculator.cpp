@@ -26,6 +26,7 @@ double TimeStepCalculator::ComputeDt(const DataLayer& layer,
 
     std::vector<PrimitiveCell> primitive_by_cell(mesh.GetCellCount());
 
+#pragma omp parallel for default(none) shared(U, primitive_by_cell, mesh) firstprivate(gamma)
     for (std::size_t cell_id = 0; cell_id < mesh.GetCellCount(); ++cell_id) {
         ConservativeCell U_cell;
         U_cell.rho = U(cell_id, DataLayer::k_rho);
@@ -37,8 +38,8 @@ double TimeStepCalculator::ComputeDt(const DataLayer& layer,
     }
 
     double dt_min = std::numeric_limits<double>::infinity();
-    bool has_valid_dt = false;
 
+#pragma omp parallel for default(none) shared(mesh, primitive_by_cell) firstprivate(cfl, gamma) reduction(min:dt_min)
     for (std::size_t cell_id = 0; cell_id < mesh.GetOwnedCellCount(); ++cell_id) {
         const Cell& cell = mesh.GetCell(cell_id);
 
@@ -63,19 +64,16 @@ double TimeStepCalculator::ComputeDt(const DataLayer& layer,
             spectral_sum += (std::abs(un) + c) * face.measure;
         }
 
-        if (spectral_sum <= 0.0) {
-            continue;
-        }
+        if (spectral_sum > 0.0) {
+            const double dt_cell = cfl * cell.volume / spectral_sum;
 
-        const double dt_cell = cfl * cell.volume / spectral_sum;
-
-        if (std::isfinite(dt_cell) && dt_cell > 0.0) {
-            dt_min = std::min(dt_min, dt_cell);
-            has_valid_dt = true;
+            if (std::isfinite(dt_cell) && dt_cell > 0.0) {
+                dt_min = std::min(dt_min, dt_cell);
+            }
         }
     }
 
-    if (!has_valid_dt || !std::isfinite(dt_min) || dt_min <= 0.0) {
+    if (!std::isfinite(dt_min) || dt_min <= 0.0) {
         return 0.0;
     }
 

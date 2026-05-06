@@ -140,6 +140,9 @@ struct CaseSettings {
     // Misc
     std::optional<bool> analytical;
     std::optional<bool> mpi_enabled;
+    std::optional<bool> use_morton;
+    std::optional<std::string> domain_decomposition_method = "rcb";
+    std::optional<int> omp_threads = 1;
 };
 
 /**
@@ -193,6 +196,8 @@ struct Settings {
     // ==================== Parallel / immersed ====================
     bool mpi_enabled = false;
     std::string domain_decomposition_method = "rcb";
+    int omp_threads = 1;
+    bool use_morton = false;
 
     [[nodiscard]] bool HasOutputFormat(const std::string& format) const {
         for (const std::string& fmt : output_formats) {
@@ -252,6 +257,9 @@ inline Settings MergeSettings(const Settings& global,
 
     APPLY_OVERRIDE(analytical)
     APPLY_OVERRIDE(mpi_enabled)
+    APPLY_OVERRIDE(domain_decomposition_method)
+    APPLY_OVERRIDE(omp_threads)
+    APPLY_OVERRIDE(use_morton)
 
 #undef APPLY_OVERRIDE
 

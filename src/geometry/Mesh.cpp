@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <string>
+#include <algorithm>
 
 Mesh::Mesh(const int dim) : dim_(dim) {
     ValidateDimension();
@@ -123,9 +124,13 @@ void Mesh::Clear() {
     cells_.clear();
     owned_cell_count_ = 0;
     ghost_cell_count_ = 0;
+    color_to_face_ids_.clear();
+    num_colors_ = 0;
+    cell_neighbor_offsets_.clear();
+    cell_neighbor_ids_.clear();
 }
 
-void Mesh::Validate() const {
+void Mesh::Validate() {
     ValidateDimension();
     ValidateNodeIds();
     ValidateFaceIds();
@@ -137,6 +142,10 @@ void Mesh::Validate() const {
     if (owned_cell_count_ + ghost_cell_count_ > cells_.size()) {
         throw std::runtime_error("Mesh::Validate: owned+ghost cell counts exceed total cell count");
     }
+
+    ComputeFaceColors();
+    BuildCellNeighbors();
+    ComputeFaceColors();
 }
 
 void Mesh::ValidateDimension() const {
@@ -303,8 +312,7 @@ void Mesh::ValidateGeometry() const {
             if (dim_ == 2 && cell.face_ids.size() < 3) {
                 throw std::runtime_error("Mesh::Validate: 2D owned cell must have at least 3 faces");
             }
-        }
-        else {
+        } else {
             if (cell.face_ids.empty()) {
                 throw std::runtime_error("Mesh::Validate: ghost cell must have at least 1 local face");
             }
@@ -343,4 +351,136 @@ void Mesh::ValidateGeometry() const {
             throw std::runtime_error("Mesh::Validate: face normal must be non-zero");
         }
     }
+}
+
+
+void Mesh::ComputeFaceColors() {
+    std::vector face_color(faces_.size(), -1);
+    int max_color = -1;
+
+    for (std::size_t i = 0; i < faces_.size(); ++i) {
+        const Face& face = faces_[i];
+
+        std::vector<bool> used_colors;
+
+        auto check_cell = [&](const std::size_t cell_id) {
+            if (cell_id == Face::k_invalid_cell_id) {
+                return;
+            }
+            const Cell& cell = cells_[cell_id];
+            for (const std::size_t cell_face_id : cell.face_ids) {
+                if (cell_face_id == i) {
+                    continue;
+                }
+                const int c = face_color[cell_face_id];
+                if (c != -1) {
+                    if (static_cast<std::size_t>(c) >= used_colors.size()) {
+                        used_colors.resize(static_cast<std::size_t>(c + 1), false);
+                    }
+                    used_colors[static_cast<std::size_t>(c)] = true;
+                }
+            }
+        };
+
+        check_cell(face.owner_cell_id);
+        check_cell(face.neighbor_cell_id);
+
+        int chosen_color = 0;
+        while (static_cast<std::size_t>(chosen_color) < used_colors.size() &&
+            used_colors[static_cast<std::size_t>(chosen_color)]) {
+            chosen_color++;
+        }
+
+        face_color[i] = chosen_color;
+        max_color = std::max(max_color, chosen_color);
+    }
+
+    num_colors_ = max_color + 1;
+
+    color_to_face_ids_.clear();
+    color_to_face_ids_.resize(static_cast<std::size_t>(num_colors_));
+
+    for (std::size_t i = 0; i < faces_.size(); ++i) {
+        color_to_face_ids_[static_cast<std::size_t>(face_color[i])].push_back(i);
+    }
+}
+
+std::size_t Mesh::GetCellNeighborBegin(const std::size_t cell_id) const {
+    if (cell_id >= cells_.size()) {
+        throw std::out_of_range("Mesh::GetCellNeighborBegin: cell_id is out of range");
+    }
+
+    return cell_neighbor_offsets_[cell_id];
+}
+
+std::size_t Mesh::GetCellNeighborEnd(const std::size_t cell_id) const {
+    if (cell_id >= cells_.size()) {
+        throw std::out_of_range("Mesh::GetCellNeighborEnd: cell_id is out of range");
+    }
+
+    return cell_neighbor_offsets_[cell_id + 1];
+}
+
+std::size_t Mesh::GetCellNeighborId(const std::size_t neighbor_offset) const {
+    if (neighbor_offset >= cell_neighbor_ids_.size()) {
+        throw std::out_of_range("Mesh::GetCellNeighborId: neighbor_offset is out of range");
+    }
+
+    return cell_neighbor_ids_[neighbor_offset];
+}
+
+std::size_t Mesh::GetCellNeighborCount(const std::size_t cell_id) const {
+    if (cell_id >= cells_.size()) {
+        throw std::out_of_range("Mesh::GetCellNeighborCount: cell_id is out of range");
+    }
+
+    return cell_neighbor_offsets_[cell_id + 1] - cell_neighbor_offsets_[cell_id];
+}
+
+void Mesh::BuildCellNeighbors() {
+    cell_neighbor_offsets_.clear();
+    cell_neighbor_ids_.clear();
+
+    cell_neighbor_offsets_.resize(cells_.size() + 1, 0);
+
+    std::vector<std::size_t> neighbors;
+    neighbors.reserve(8);
+
+    for (std::size_t cell_id = 0; cell_id < cells_.size(); ++cell_id) {
+        neighbors.clear();
+
+        const Cell& cell = cells_[cell_id];
+
+        for (const std::size_t face_id : cell.face_ids) {
+            const Face& face = faces_[face_id];
+
+            if (face.IsPhysicalBoundary()) {
+                continue;
+            }
+
+            std::size_t neighbor_id = Face::k_invalid_cell_id;
+
+            if (face.owner_cell_id == cell.local_id) {
+                neighbor_id = face.neighbor_cell_id;
+            } else if (face.neighbor_cell_id == cell.local_id) {
+                neighbor_id = face.owner_cell_id;
+            }
+
+            if (neighbor_id == Face::k_invalid_cell_id || neighbor_id == cell.local_id) {
+                continue;
+            }
+
+            const bool already_added =
+                std::find(neighbors.begin(), neighbors.end(), neighbor_id) != neighbors.end();
+
+            if (!already_added) {
+                neighbors.push_back(neighbor_id);
+            }
+        }
+
+        cell_neighbor_offsets_[cell_id] = cell_neighbor_ids_.size();
+        cell_neighbor_ids_.insert(cell_neighbor_ids_.end(), neighbors.begin(), neighbors.end());
+    }
+
+    cell_neighbor_offsets_[cells_.size()] = cell_neighbor_ids_.size();
 }

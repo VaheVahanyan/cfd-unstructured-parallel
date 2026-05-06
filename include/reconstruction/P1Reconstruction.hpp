@@ -46,14 +46,13 @@ private:
 
     [[nodiscard]] PrimitiveCell LoadCellPrimitive(const Workspace& workspace, std::size_t cell_id) const;
 
-    void CollectNeighborCellIds(const Mesh& mesh, const Cell& cell, std::vector<std::size_t>& neighbor_ids) const;
+    [[nodiscard]] PrimitiveGradient ComputeUnlimitedGradient(const Mesh& mesh,
+                                                             const Workspace& workspace,
+                                                             const Cell& cell) const;
 
-    [[nodiscard]] PrimitiveGradient ComputeUnlimitedGradient(const Mesh& mesh, const Workspace& workspace,
-                                                             const Cell& cell,
-                                                             const std::vector<std::size_t>& neighbor_ids) const;
-
-    [[nodiscard]] double ComputeLimiter(const Mesh& mesh, const Workspace& workspace, const Cell& cell,
-                                        const std::vector<std::size_t>& neighbor_ids,
+    [[nodiscard]] double ComputeLimiter(const Mesh& mesh,
+                                        const Workspace& workspace,
+                                        const Cell& cell,
                                         const PrimitiveGradient& grad) const;
 
     [[nodiscard]] double ComputeBarthJespersenPhi(double w_cell, double w_min, double w_max,

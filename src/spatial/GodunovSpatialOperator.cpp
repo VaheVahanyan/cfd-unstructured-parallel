@@ -58,9 +58,9 @@ void GodunovSpatialOperator::InitializeReconstruction(const Settings& settings) 
     }
 
     throw std::runtime_error(
-        "GodunovSpatialOperator::InitializeReconstruction: unsupported reconstruction '" +
-        settings.reconstruction + "'"
-    );
+                             "GodunovSpatialOperator::InitializeReconstruction: unsupported reconstruction '" +
+                             settings.reconstruction + "'"
+                            );
 }
 
 void GodunovSpatialOperator::InitializeRiemannSolver(const Settings& settings) {
@@ -95,9 +95,9 @@ void GodunovSpatialOperator::InitializeRiemannSolver(const Settings& settings) {
     // }
 
     throw std::runtime_error(
-        "GodunovSpatialOperator::InitializeRiemannSolver: unsupported riemann solver '" +
-        settings.riemann_solver + "'"
-    );
+                             "GodunovSpatialOperator::InitializeRiemannSolver: unsupported riemann solver '" +
+                             settings.riemann_solver + "'"
+                            );
 }
 
 void GodunovSpatialOperator::FillPrimitiveCache(const DataLayer& layer,
@@ -106,8 +106,10 @@ void GodunovSpatialOperator::FillPrimitiveCache(const DataLayer& layer,
                                                 const double gamma) const {
     const auto& U = layer.U();
     auto& W = workspace.W();
+    const std::size_t n_cells = mesh.GetCellCount();
 
-    for (std::size_t cell_id = 0; cell_id < mesh.GetCellCount(); ++cell_id) {
+#pragma omp parallel for default(none) shared(U, W, n_cells) firstprivate(gamma)
+    for (std::size_t cell_id = 0; cell_id < n_cells; ++cell_id) {
         ConservativeCell U_cell;
         U_cell.rho = U(cell_id, DataLayer::k_rho);
         U_cell.rhoU = U(cell_id, DataLayer::k_rhoU);
@@ -165,6 +167,8 @@ void GodunovSpatialOperator::AccumulateInternalFace(const DataLayer& layer,
                                                     const Face& face,
                                                     Workspace& workspace,
                                                     const double gamma) const {
+    (void)layer;
+
     PrimitiveCell owner_state;
     PrimitiveCell neighbor_state;
 
@@ -175,7 +179,10 @@ void GodunovSpatialOperator::AccumulateInternalFace(const DataLayer& layer,
         riemann_solver_->ComputeFlux(owner_state, neighbor_state, gamma, normal);
 
     AccumulateFluxToOwner(mesh, face, flux, workspace);
-    AccumulateFluxToNeighbor(mesh, face, flux, workspace);
+
+    if (face.IsInternal()) {
+        AccumulateFluxToNeighbor(mesh, face, flux, workspace);
+    }
 }
 
 void GodunovSpatialOperator::AccumulateBoundaryFace(const DataLayer& layer,
@@ -207,20 +214,20 @@ void GodunovSpatialOperator::ComputeRHS(const DataLayer& layer,
     workspace.ZeroRhs();
 
     FillPrimitiveCache(layer, mesh, workspace, gamma);
+    reconstruction_->ComputeGradients(mesh, workspace);
 
-    for (const Face& face : mesh.Faces()) {
-        if (face.IsInternal() || face.IsMPIBoundary()) {
-            AccumulateInternalFace(layer, mesh, face, workspace, gamma);
-            continue;
+    for (int color = 0; color < mesh.GetNumColors(); ++color) {
+        const auto& face_ids = mesh.GetFacesByColor(color);
+
+#pragma omp parallel for schedule(static) default(none) shared(layer, mesh, workspace, gamma, face_ids)
+        for (std::size_t i = 0; i < face_ids.size(); ++i) {
+            const Face& face = mesh.GetFace(face_ids[i]);
+
+            if (face.IsInternal() || face.IsMPIBoundary()) {
+                AccumulateInternalFace(layer, mesh, face, workspace, gamma);
+            } else if (face.IsPhysicalBoundary()) {
+                AccumulateBoundaryFace(layer, mesh, face, workspace, gamma);
+            }
         }
-
-        if (face.IsPhysicalBoundary()) {
-            AccumulateBoundaryFace(layer, mesh, face, workspace, gamma);
-            continue;
-        }
-
-        throw std::runtime_error(
-            "GodunovSpatialOperator::ComputeRHS: face has invalid topology classification"
-        );
     }
 }

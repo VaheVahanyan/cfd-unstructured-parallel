@@ -1,5 +1,7 @@
 #include "parallel/MPIContext.hpp"
 
+#include <algorithm>
+
 MPIContext::MPIContext(const MPI_Comm comm, const bool owns_lifetime)
     : comm_(comm), owns_lifetime_(owns_lifetime) {
     if (!IsInitialized()) {
@@ -7,8 +9,7 @@ MPIContext::MPIContext(const MPI_Comm comm, const bool owns_lifetime)
             int argc = 0;
             char** argv = nullptr;
             Initialize(argc, argv);
-        }
-        else {
+        } else {
             throw std::runtime_error("MPIContext: MPI is not initialized");
         }
     }
@@ -29,20 +30,28 @@ MPIContext::~MPIContext() {
 void MPIContext::Initialize(int& argc, char**& argv) {
     int initialized = 0;
     MPI_Initialized(&initialized);
+
     if (!initialized) {
-        MPI_Init(&argc, &argv);
+        int provided = MPI_THREAD_SINGLE;
+        MPI_Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &provided);
+
+        if (provided < MPI_THREAD_FUNNELED) {
+            MPI_Abort(MPI_COMM_WORLD, 1);
+        }
     }
 }
 
 void MPIContext::Finalize() {
     int initialized = 0;
     MPI_Initialized(&initialized);
+
     if (!initialized) {
         return;
     }
 
     int finalized = 0;
     MPI_Finalized(&finalized);
+
     if (!finalized) {
         MPI_Finalize();
     }
@@ -116,14 +125,15 @@ int MPIContext::GlobalSum(const int value) const {
     return result;
 }
 
-auto MPIContext::BroadcastString(const std::string& value, const int root) const -> std::string {
+std::string MPIContext::BroadcastString(const std::string& value, const int root) const {
     int length = rank_ == root ? static_cast<int>(value.size()) : 0;
+
     MPI_Bcast(&length, 1, MPI_INT, root, comm_);
 
     std::string result;
-    result.resize(length);
+    result.resize(static_cast<std::size_t>(length));
 
-    if (IsRoot() && length > 0) {
+    if (rank_ == root && length > 0) {
         std::copy(value.begin(), value.end(), result.begin());
     }
 

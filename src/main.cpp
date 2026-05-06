@@ -8,7 +8,8 @@ VTK_MODULE_INIT(vtkRenderingContextOpenGL2);
 #include "RunManager.hpp"
 #include "parallel/MPIContext.hpp"
 
-namespace {
+namespace
+{
     class MPIInitializerGuard {
     public:
         MPIInitializerGuard(int& argc, char**& argv) {
@@ -20,8 +21,14 @@ namespace {
         }
 
         MPIInitializerGuard(const MPIInitializerGuard&) = delete;
-        auto operator=(const MPIInitializerGuard&) -> MPIInitializerGuard& = delete;
+        MPIInitializerGuard& operator=(const MPIInitializerGuard&) = delete;
     };
+
+    void AbortMPIIfAlive() {
+        if (MPIContext::IsInitialized() && !MPIContext::IsFinalized()) {
+            MPI_Abort(MPI_COMM_WORLD, 1);
+        }
+    }
 }  // namespace
 
 auto main(int argc, char* argv[]) -> int {
@@ -33,10 +40,12 @@ auto main(int argc, char* argv[]) -> int {
     }
     catch (const std::exception& e) {
         std::cerr << "Fatal error: " << e.what() << '\n';
+        AbortMPIIfAlive();
         return 1;
     }
     catch (...) {
         std::cerr << "Fatal error: unknown exception\n";
+        AbortMPIIfAlive();
         return 1;
     }
 }
