@@ -95,6 +95,8 @@ void Simulation::Run() {
         PrintLog();
     }
 
+    WriteFinalState();
+
     const auto end_wall = std::chrono::high_resolution_clock::now();
     const std::chrono::duration<double> wall_time = end_wall - start_wall;
 
@@ -480,20 +482,39 @@ bool Simulation::ShouldRun() const {
     return time_not_exceeded && steps_not_exceeded;
 }
 
-void Simulation::WriteInitialState() const {
+void Simulation::WriteInitialState() {
     if (vtk_writer_) {
         vtk_writer_->Write(*layer_, *mesh_, settings_, 0, 0.0);
+        last_written_step_ = 0;
     }
 }
 
-void Simulation::WriteStepState() const {
+void Simulation::WriteStepState() {
     if (!ShouldWrite()) {
+        return;
+    }
+
+    if (last_written_step_ == step_cur_) {
         return;
     }
 
     if (vtk_writer_) {
         vtk_writer_->Write(*layer_, *mesh_, settings_, step_cur_, t_cur_);
+        last_written_step_ = step_cur_;
     }
+}
+
+void Simulation::WriteFinalState() {
+    if (!vtk_writer_) {
+        return;
+    }
+
+    if (last_written_step_ == step_cur_) {
+        return;
+    }
+
+    vtk_writer_->Write(*layer_, *mesh_, settings_, step_cur_, t_cur_);
+    last_written_step_ = step_cur_;
 }
 
 void Simulation::PrintLog() const {

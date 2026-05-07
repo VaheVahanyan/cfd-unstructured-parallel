@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <memory>
 #include <string>
+#include <limits>
 
 #include "config/InitialConditions.hpp"
 #include "config/Settings.hpp"
@@ -86,8 +87,9 @@ private:
     [[nodiscard]] bool ShouldLog() const;
     [[nodiscard]] bool ShouldRun() const;
 
-    void WriteInitialState() const;
-    void WriteStepState() const;
+    void WriteInitialState();
+    void WriteStepState();
+    void WriteFinalState();
     void PrintLog() const;
     void FinalizeWriter();
 
@@ -111,6 +113,8 @@ private:
     double t_cur_ = 0.0;
     std::size_t step_cur_ = 0;
     double dt_ = 0.0;
+
+    std::size_t last_written_step_ = std::numeric_limits<std::size_t>::max();
 };
 
 #endif  // SIMULATION_HPP

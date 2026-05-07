@@ -63,13 +63,13 @@ defaults:
         max_steps: 0
 
     logging:
-        every_steps: 10
+        every_steps: 0
         every_time: 0.0
 
     output:
         format: vtk
         directory: ../result
-        every_steps: 100
+        every_steps: 0
         every_time: 0.0
 
 cases:
@@ -114,7 +114,7 @@ cases:
             t_end: 4.0
 
         output:
-            every_steps: 100
+            every_steps: 0
 
         parallel:
             mpi: true
