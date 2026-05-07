@@ -2,6 +2,7 @@
 #define RUNSTATISTICS_HPP
 
 #include <cstddef>
+#include <string>
 
 class HaloExchange;
 class Mesh;
