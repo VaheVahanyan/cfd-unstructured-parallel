@@ -180,6 +180,8 @@ void VTKWriter::WriteUnstructuredGrid(const DataLayer& layer,
         throw std::runtime_error("VTKWriter: DataLayer cell count does not match mesh cell count");
     }
 
+    MPIContext mpi;
+
     EnsureDirectoriesExist();
     const std::string filename = GenerateFilename(step, settings);
 
@@ -241,6 +243,9 @@ void VTKWriter::WriteUnstructuredGrid(const DataLayer& layer,
     vtkSmartPointer<vtkIntArray> arr_cell_local_id = CreateIntArray("cell_local_id", n_cells);
     vtkSmartPointer<vtkIntArray> arr_cell_original_id = CreateIntArray("cell_original_id", n_cells);
 
+    vtkSmartPointer<vtkIntArray> arr_rank_id = CreateIntArray("rank_id", n_cells);
+    vtkSmartPointer<vtkIntArray> arr_is_owned = CreateIntArray("is_owned", n_cells);
+
     for (std::size_t cell_id = 0; cell_id < owned_cell_count; ++cell_id) {
         const PrimitiveCell primitive = ConservativeRowToPrimitive(U, cell_id, gamma);
 
@@ -253,7 +258,7 @@ void VTKWriter::WriteUnstructuredGrid(const DataLayer& layer,
         const double eint = rho > 0.0 ? (E - kinetic) / rho : 0.0;
 
         arr_rho->SetValue(cell_id, rho);
-        double velocity[2] = {u, v};
+        double velocity[3] = {u, v, 0};
         arr_vel->SetTuple(cell_id, velocity);
         arr_p->SetValue(cell_id, P);
         arr_e->SetValue(cell_id, E);
@@ -262,6 +267,9 @@ void VTKWriter::WriteUnstructuredGrid(const DataLayer& layer,
         const Cell& cell = mesh.GetCell(cell_id);
         arr_cell_local_id->SetValue(cell_id, static_cast<int>(cell.local_id));
         arr_cell_original_id->SetValue(cell_id, static_cast<int>(cell.id));
+
+        arr_rank_id->SetValue(cell_id, mpi.Rank());
+        arr_is_owned->SetValue(cell_id, 1);
     }
 
     grid->GetCellData()->AddArray(arr_rho);
@@ -271,13 +279,15 @@ void VTKWriter::WriteUnstructuredGrid(const DataLayer& layer,
     grid->GetCellData()->AddArray(arr_eint);
     grid->GetCellData()->AddArray(arr_cell_local_id);
     grid->GetCellData()->AddArray(arr_cell_original_id);
+    grid->GetCellData()->AddArray(arr_rank_id);
+    grid->GetCellData()->AddArray(arr_is_owned);
 
     AddFieldDataArray<double>(grid, "TimeValue", time);
     AddFieldDataArray<int>(grid, "MeshDimension", mesh.GetDim());
     AddFieldDataArray<int>(grid, "OwnedCellCount", static_cast<int>(owned_cell_count));
-    AddFieldDataArray<int>(grid, "GhostCellCount", 0);
-    MPIContext mpi;
+    AddFieldDataArray<int>(grid, "GhostCellCount", static_cast<int>(mesh.GetGhostCellCount()));
     AddFieldDataArray<int>(grid, "Rank", mpi.Rank());
+    AddFieldDataArray<int>(grid, "MpiSize", mpi.Size());
 
     vtkSmartPointer<vtkXMLUnstructuredGridWriter> writer =
         vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();

@@ -55,6 +55,7 @@ add_executable(${NAME}
         src/output/WriterFactory.cpp
         src/output/VTKWriter.cpp
         src/output/VTKRecomposer.cpp
+        src/output/RunStatistics.cpp
 
         src/data/DataLayer.cpp
         src/data/Variables.cpp

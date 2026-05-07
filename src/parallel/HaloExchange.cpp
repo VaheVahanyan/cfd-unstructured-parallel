@@ -165,3 +165,27 @@ void HaloExchange::Synchronize(DataLayer& layer) const {
         UnpackRecvBuffer(layer, halos_[i], buffers_[i].recv);
     }
 }
+
+std::size_t HaloExchange::GetNeighborCount() const {
+    return halos_.size();
+}
+
+std::size_t HaloExchange::GetTotalSendCellCount() const {
+    std::size_t total = 0;
+
+    for (const DomainDecomposition::NeighborHalo& halo : halos_) {
+        total += halo.send_local_ids.size();
+    }
+
+    return total;
+}
+
+std::size_t HaloExchange::GetTotalRecvCellCount() const {
+    std::size_t total = 0;
+
+    for (const DomainDecomposition::NeighborHalo& halo : halos_) {
+        total += halo.recv_local_ids.size();
+    }
+
+    return total;
+}

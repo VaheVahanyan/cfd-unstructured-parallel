@@ -30,6 +30,7 @@
 #include "parallel/RCBDecomposition.hpp"
 #include "parallel/METISDecomposition.hpp"
 #include "geometry/MortonOrder.hpp"
+#include "output/RunStatistics.hpp"
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -51,6 +52,11 @@ void Simulation::Initialize() {
 #endif
     ValidateConfiguration();
     BuildMesh();
+
+    if (mpi_context_) {
+        RunStatistics::PrintParallelSummary(settings_, *mesh_, *mpi_context_, halo_exchange_.get());
+    }
+
     ValidateBoundaryCoverage();
     AllocateState();
     InitializeFields();
@@ -98,6 +104,18 @@ void Simulation::Run() {
         std::cout << ">>> Total steps: " << step_cur_ << '\n';
         std::cout << ">>> Wall time: " << wall_time.count() << "s\n";
         std::cout << ">>> Computation time: " << runtime.count() << "s\n";
+    }
+
+    if (mpi_context_) {
+        RunStatistics::WriteRankTimingCsv(
+            settings_,
+            *mesh_,
+            *mpi_context_,
+            halo_exchange_.get(),
+            step_cur_,
+            runtime.count(),
+            wall_time.count()
+        );
     }
 
     FinalizeWriter();

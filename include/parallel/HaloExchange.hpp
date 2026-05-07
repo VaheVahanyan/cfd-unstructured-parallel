@@ -55,6 +55,21 @@ public:
      */
     void Synchronize(DataLayer& layer) const override;
 
+    /**
+     * @brief Return number of neighboring MPI ranks participating in halo exchange.
+     */
+    [[nodiscard]] std::size_t GetNeighborCount() const;
+
+    /**
+     * @brief Return total number of local owned cells sent to neighboring ranks.
+     */
+    [[nodiscard]] std::size_t GetTotalSendCellCount() const;
+
+    /**
+     * @brief Return total number of local ghost cells received from neighboring ranks.
+     */
+    [[nodiscard]] std::size_t GetTotalRecvCellCount() const;
+
 private:
     struct ExchangeBuffer final {
         std::vector<CellStatePacket> send;
