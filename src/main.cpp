@@ -1,7 +1,3 @@
-#include <vtkAutoInit.h>
-VTK_MODULE_INIT(vtkRenderingOpenGL2);
-VTK_MODULE_INIT(vtkRenderingContextOpenGL2);
-
 #include <exception>
 #include <iostream>
 

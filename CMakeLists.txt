@@ -15,16 +15,7 @@ include(FetchContent)
 
 find_package(MPI REQUIRED)
 find_package(OpenMP)
-find_path(METIS_INCLUDE_DIR NAMES metis.h)
 
-find_library(METIS_LIBRARY NAMES metis)
-
-if (METIS_INCLUDE_DIR AND METIS_LIBRARY)
-    message(STATUS "Found METIS include: ${METIS_INCLUDE_DIR}")
-    message(STATUS "Found METIS library: ${METIS_LIBRARY}")
-else ()
-    message(FATAL_ERROR "METIS library not found! Please install it or specify paths manually.")
-endif ()
 
 include(cmake/Dependencies.cmake)
 #include(cmake/Documentation.cmake)
@@ -116,7 +107,6 @@ target_include_directories(${NAME}
         PRIVATE
         ${PROJECT_SOURCE_DIR}/include
         ${PROJECT_SOURCE_DIR}/include/external
-        ${METIS_INCLUDE_DIR}
 )
 
 target_link_libraries(${NAME}
@@ -129,28 +119,19 @@ target_link_libraries(${NAME}
         VTK::CommonDataModel
         VTK::FiltersCore
         VTK::FiltersGeneral
-        VTK::FiltersSources
         VTK::IOCore
         VTK::IOLegacy
-        VTK::IOImage
         VTK::IOXML
-        VTK::InteractionWidgets
-        VTK::RenderingCore
-        VTK::RenderingFreeType
-        VTK::RenderingOpenGL2
-        VTK::RenderingContext2D
-        VTK::RenderingContextOpenGL2
-        VTK::RenderingUI
-        VTK::ViewsCore
-        VTK::ViewsContext2D
 
         MPI::MPI_CXX
 
         OpenMP::OpenMP_CXX
 
         gmsh::gmsh
-
-        ${METIS_LIBRARY}
+	
+	GKlib
+	
+	metis::metis
 )
 
 target_compile_definitions(${NAME} PRIVATE XTENSOR_USE_OPENMP)
