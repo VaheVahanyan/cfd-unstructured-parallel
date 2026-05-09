@@ -141,8 +141,8 @@ struct CaseSettings {
     std::optional<bool> analytical;
     std::optional<bool> mpi_enabled;
     std::optional<bool> use_morton;
-    std::optional<std::string> domain_decomposition_method = "rcb";
-    std::optional<int> omp_threads = 1;
+    std::optional<std::string> domain_decomposition_method;
+    std::optional<int> omp_threads;
 };
 
 /**
